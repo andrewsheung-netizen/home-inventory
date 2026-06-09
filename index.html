@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Home Inventory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+/* ── THEME ── */
+:root{
+  --blue:#3b82f6; --blue2:#2563eb; --purple:#8b5cf6;
+  --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --cyan:#06b6d4;
+  --r:11px; --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.25);
+}
+[data-theme="dark"]{
+  --bg:#0d1117; --surf:#161b22; --surf2:#21262d;
+  --bdr:#30363d; --t1:#e6edf3; --t2:#8b949e; --t3:#6e7681;
+}
+[data-theme="light"]{
+  --bg:#f0f2f5; --surf:#ffffff; --surf2:#f6f8fa;
+  --bdr:#d0d7de; --t1:#24292f; --t2:#57606a; --t3:#8c959f;
+}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;transition:background .2s,color .2s}
+
+/* ── LAYOUT ── */
+.shell{display:flex;min-height:100vh}
+
+/* ── SIDEBAR ── */
+.sb{width:220px;background:#0d1117;border-right:1px solid #21262d;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.sb-brand{padding:1.2rem 1rem .9rem;border-bottom:1px solid #21262d}
+.sb-brand h1{font-size:.92rem;font-weight:800;color:#e6edf3;letter-spacing:-.02em}
+.sb-brand h1 span{color:var(--blue)}
+.sb-brand p{font-size:.68rem;color:#6e7681;margin-top:2px}
+.sb-nav{padding:.4rem 0;flex:1}
+.nb{display:flex;align-items:center;gap:9px;width:calc(100% - 1rem);margin:1px .5rem;padding:8px 10px;border-radius:7px;border:none;background:none;cursor:pointer;font-family:inherit;font-size:.83rem;font-weight:500;color:#6e7681;text-align:left;transition:all .12s}
+.nb:hover{background:#21262d;color:#8b949e}
+.nb.active{background:rgba(59,130,246,.15);color:#58a6ff}
+.nb-dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.4;flex-shrink:0}
+.nb.active .nb-dot{opacity:1}
+.sb-foot{padding:.9rem 1rem;border-top:1px solid #21262d;display:flex;align-items:center;justify-content:space-between}
+.ci{display:flex;align-items:center;gap:5px;font-size:.68rem;color:#6e7681}
+.ci-dot{width:5px;height:5px;border-radius:50%;background:#6e7681}
+.ci.ok{color:#3fb950}.ci.ok .ci-dot{background:#3fb950}
+.tt{width:34px;height:19px;border-radius:10px;background:#21262d;border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
+[data-theme="light"] .tt{background:var(--blue)}
+.tt::after{content:'';position:absolute;width:13px;height:13px;border-radius:50%;background:#6e7681;top:3px;left:3px;transition:left .18s,background .18s}
+[data-theme="light"] .tt::after{left:18px;background:#fff}
+
+/* ── MAIN ── */
+.main{margin-left:220px;flex:1;padding:2rem 2.25rem;transition:margin-left .2s}
+.tab{display:none}.tab.active{display:block}
+.ph{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:1.5rem;gap:1rem}
+.ph-title{font-size:1.5rem;font-weight:800;letter-spacing:-.03em}
+.ph-sub{font-size:.8rem;color:var(--t3);margin-top:3px}
+.ph-actions{display:flex;gap:7px;align-items:center}
+
+/* ── GRADIENT STAT CARDS ── */
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+.gc{border-radius:14px;padding:1.2rem 1.4rem;color:#fff;position:relative;overflow:hidden}
+.gc::before,.gc::after{content:'';position:absolute;border-radius:50%;background:rgba(255,255,255,.07)}
+.gc::before{width:90px;height:90px;top:-30px;right:-20px}
+.gc::after{width:50px;height:50px;bottom:-15px;left:20px}
+.gc.blue  {background:linear-gradient(135deg,#1d4ed8,#3b82f6)}
+.gc.purple{background:linear-gradient(135deg,#6d28d9,#8b5cf6)}
+.gc.amber {background:linear-gradient(135deg,#b45309,#f59e0b)}
+.gc.red   {background:linear-gradient(135deg,#b91c1c,#ef4444)}
+.gc.green {background:linear-gradient(135deg,#15803d,#22c55e)}
+.gc-lbl{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.7;margin-bottom:7px;position:relative;z-index:1}
+.gc-val{font-size:2rem;font-weight:800;letter-spacing:-.04em;line-height:1;position:relative;z-index:1}
+.gc-sub{font-size:.72rem;opacity:.6;margin-top:5px;position:relative;z-index:1}
+
+/* ── CARD ── */
+.card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;margin-bottom:1.25rem}
+.ch{padding:.85rem 1.25rem;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
+.ct{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t2)}
+
+/* ── DASH GRID ── */
+.dg2{display:grid;grid-template-columns:2fr 1fr;gap:1.25rem;margin-bottom:1.25rem}
+
+/* ── COMPARISON CHART ── */
+.cmp-wrap{padding:.85rem 1.25rem 1rem}
+.cmp-head{display:flex;margin-bottom:6px}
+.cmp-name-col{width:130px;flex-shrink:0}
+.cmp-mh{flex:1;text-align:center;font-size:.62rem;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.cmp-row{display:flex;align-items:flex-end;padding:4px 0;border-radius:6px}
+.cmp-row:hover{background:var(--surf2)}
+.cmp-iname{width:130px;flex-shrink:0;display:flex;align-items:center;gap:6px;font-size:.76rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-bottom:16px;padding-right:8px}
+.cmp-cells{display:flex;flex:1;gap:4px;height:60px;align-items:flex-end}
+.cmp-cell{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.cmp-bar{width:100%;border-radius:3px 3px 0 0;min-height:0;transition:height .4s ease;position:relative;cursor:default}
+.cmp-bar:hover::after{content:attr(data-v);position:absolute;bottom:calc(100% + 3px);left:50%;transform:translateX(-50%);background:var(--surf2);border:1px solid var(--bdr);color:var(--t1);font-size:.68rem;font-weight:700;padding:2px 6px;border-radius:4px;white-space:nowrap;z-index:10}
+.cmp-val{font-size:.6rem;color:var(--t3);margin-top:2px;font-weight:500;line-height:1;min-height:10px}
+.cmp-axis{height:1px;background:var(--bdr);margin:0 1.25rem 0 calc(1.25rem + 130px)}
+.cmp-empty{padding:2.5rem 1.25rem;font-size:.82rem;color:var(--t3);text-align:center}
+
+/* ── BREAKDOWN ROWS ── */
+.bdr-row{display:flex;align-items:center;gap:10px;padding:8px 1.25rem;font-size:.82rem}
+.bdr-row:last-child{padding-bottom:1rem}
+.bdr-name{width:120px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
+.bdr-track{flex:1;height:6px;border-radius:3px;background:var(--surf2);overflow:hidden}
+.bdr-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.bdr-pct{width:38px;text-align:right;font-weight:600;font-size:.75rem;color:var(--t2)}
+.bdr-count{width:54px;text-align:right;font-size:.73rem;color:var(--t3)}
+
+/* ── CAT PILLS ── */
+.cp-wrap{display:flex;gap:5px;flex-wrap:wrap;padding-bottom:1rem}
+.cp{padding:4px 12px;border-radius:20px;font-size:.76rem;font-weight:600;cursor:pointer;border:1.5px solid var(--bdr);background:none;color:var(--t2);font-family:inherit;transition:all .12s}
+.cp.active{border-color:transparent;color:#fff}
+.cp:hover:not(.active){background:var(--surf2)}
+
+/* ── CAT DOT ── */
+.cd{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block}
+
+/* ── TABLE ── */
+.t{width:100%;border-collapse:collapse}
+.t th{padding:8px 1.1rem;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);background:var(--surf2);border-bottom:1px solid var(--bdr)}
+.t td{padding:11px 1.1rem;border-bottom:1px solid var(--bdr);font-size:.855rem;vertical-align:middle}
+.t tr:last-child td{border-bottom:none}
+.t tbody tr:hover td{background:var(--surf2)}
+.i-name{font-weight:600}
+.i-meta{font-size:.73rem;color:var(--t3);margin-top:1px}
+.qb{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-weight:700;font-size:.875rem}
+.qb.ok  {background:rgba(34,197,94,.12);color:#4ade80}
+.qb.warn{background:rgba(245,158,11,.12);color:#fbbf24}
+.qb.crit{background:rgba(239,68,68,.12);color:#f87171}
+.stag{display:inline-flex;align-items:center;font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:3px;margin-left:6px;text-transform:uppercase;letter-spacing:.04em}
+.stag.w{background:rgba(245,158,11,.15);color:#fbbf24}
+.stag.c{background:rgba(239,68,68,.15);color:#f87171}
+.ag{display:flex;gap:4px;justify-content:flex-end}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;border:none;cursor:pointer;font-family:inherit;font-size:.82rem;font-weight:600;transition:all .12s;white-space:nowrap}
+.btn-sm{padding:5px 11px;font-size:.78rem;border-radius:6px}
+.btn-xs{padding:3px 9px;font-size:.73rem;border-radius:5px}
+.btn-p{background:var(--blue);color:#fff}.btn-p:hover{background:var(--blue2)}
+.btn-g{background:var(--surf2);color:var(--t2);border:1px solid var(--bdr)}.btn-g:hover{background:var(--bdr)}
+.btn-u{background:rgba(239,68,68,.15);color:#f87171}.btn-u:hover{background:rgba(239,68,68,.25)}
+.btn-b{background:rgba(34,197,94,.15);color:#4ade80}.btn-b:hover{background:rgba(34,197,94,.25)}
+.btn-s{background:var(--surf2);color:var(--t2);border:1px solid var(--bdr)}.btn-s:hover{background:var(--bdr)}
+.btn-danger{background:#ef4444;color:#fff}.btn-danger:hover{background:#dc2626}
+.btn-success{background:#22c55e;color:#fff}.btn-success:hover{background:#16a34a}
+.ib{width:28px;height:28px;border-radius:5px;border:1px solid var(--bdr);background:var(--surf2);color:var(--t2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;transition:all .12s}
+.ib:hover{background:var(--bdr)}
+.ib.del:hover{background:rgba(239,68,68,.15);color:#f87171;border-color:rgba(239,68,68,.3)}
+
+/* ── LOG ── */
+.le{padding:11px 1.25rem;border-bottom:1px solid var(--bdr);transition:background .1s}
+.le:last-child{border-bottom:none}
+.le:hover{background:var(--surf2)}
+.le.ud{opacity:.4}
+.lh{display:flex;align-items:flex-start;gap:10px}
+.li{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0;margin-top:1px}
+.li.used{background:rgba(239,68,68,.15);color:#f87171}
+.li.purchased{background:rgba(34,197,94,.15);color:#4ade80}
+.li.override{background:rgba(59,130,246,.15);color:#60a5fa}
+.lm{flex:1;min-width:0}
+.l-title{font-size:.86rem;font-weight:600}
+.l-items{font-size:.76rem;color:var(--t2);margin-top:2px;line-height:1.5}
+.l-time{font-size:.7rem;color:var(--t3);margin-top:2px}
+
+/* ── SETTINGS ── */
+.tr-row{display:flex;align-items:center;gap:10px;padding:10px 1.25rem;border-bottom:1px solid var(--bdr);font-size:.86rem}
+.tr-row:last-child{border-bottom:none}
+.tr-name{flex:1;font-weight:500}
+.tr-lbl{font-size:.7rem;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.tr-in{width:58px;padding:5px 8px;border:1.5px solid var(--bdr);border-radius:6px;font-size:.86rem;font-family:inherit;font-weight:600;text-align:center;outline:none;background:var(--surf);color:var(--t1);transition:border-color .12s}
+.tr-in:focus{border-color:var(--blue)}
+.cat-row{display:flex;align-items:center;gap:10px;padding:10px 1.25rem;border-bottom:1px solid var(--bdr)}
+.cat-row:last-child{border-bottom:none}
+.cat-swatch{width:13px;height:13px;border-radius:50%;flex-shrink:0}
+
+/* ── EMPTY ── */
+.empty{padding:3rem 2rem;text-align:center;color:var(--t3)}
+.e-ttl{font-size:.88rem;font-weight:600;color:var(--t2);margin-bottom:5px}
+.e-sub{font-size:.79rem;margin-bottom:1.25rem}
+
+/* ── MODALS ── */
+.bd{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);z-index:200;align-items:center;justify-content:center;padding:1rem}
+.bd.open{display:flex}
+.modal{background:var(--surf);border:1px solid var(--bdr);border-radius:14px;padding:1.5rem;width:100%;max-width:420px;box-shadow:0 24px 80px rgba(0,0,0,.5);animation:up .17s ease}
+.modal.wide{max-width:500px}
+@keyframes up{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+.m-title{font-size:1rem;font-weight:800;margin-bottom:1.2rem;letter-spacing:-.02em}
+.m-sub{font-size:.79rem;color:var(--t2);margin-top:-1rem;margin-bottom:1.2rem}
+.mf{display:flex;gap:7px;justify-content:flex-end;margin-top:1.2rem}
+
+/* ── FORM ── */
+.fg{margin-bottom:.85rem}
+.fg label{display:block;font-size:.69rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t2);margin-bottom:4px}
+.fg input,.fg select{width:100%;padding:9px 11px;border:1.5px solid var(--bdr);border-radius:8px;font-size:.875rem;font-family:inherit;outline:none;background:var(--surf2);color:var(--t1);transition:border-color .12s}
+.fg input:focus,.fg select:focus{border-color:var(--blue)}
+.iu{display:flex;border:1.5px solid var(--bdr);border-radius:8px;overflow:hidden;background:var(--surf2);transition:border-color .12s}
+.iu:focus-within{border-color:var(--blue)}
+.iu input{border:none;background:none;flex:1;padding:9px 11px;font-family:inherit;font-size:.875rem;color:var(--t1);outline:none;font-weight:600}
+.iu .ut{padding:0 10px;background:var(--surf);color:var(--t3);font-size:.76rem;font-weight:500;display:flex;align-items:center;border-left:1.5px solid var(--bdr)}
+
+/* ── TRANSACTION ROWS ── */
+.txn-r{display:grid;grid-template-columns:1fr 84px 24px;gap:6px;align-items:center;margin-bottom:6px}
+.txn-r select,.txn-r input{padding:8px 9px;border:1.5px solid var(--bdr);border-radius:7px;font-family:inherit;font-size:.82rem;background:var(--surf2);color:var(--t1);outline:none;transition:border-color .12s}
+.txn-r select:focus,.txn-r input:focus{border-color:var(--blue)}
+.rm{width:24px;height:24px;border:none;background:none;color:var(--t3);cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:color .1s}
+.rm:hover{color:var(--red)}
+
+/* ── ACTION TOGGLE ── */
+.at{display:flex;gap:4px;background:var(--surf2);border-radius:8px;padding:3px;margin-bottom:1rem}
+.at button{flex:1;padding:6px 12px;border-radius:6px;border:none;font-family:inherit;font-size:.8rem;font-weight:600;cursor:pointer;color:var(--t3);background:none;transition:all .12s}
+.at button.active.used{background:rgba(239,68,68,.2);color:#f87171}
+.at button.active.purchased{background:rgba(34,197,94,.2);color:#4ade80}
+
+/* ── COLOR PICKER ── */
+.cp-pick{display:flex;gap:8px;flex-wrap:wrap;padding:4px 0}
+.col-swatch{width:27px;height:27px;border-radius:50%;cursor:pointer;transition:all .1s;border:2.5px solid transparent}
+.col-swatch.sel{border-color:#fff;box-shadow:0 0 0 2px var(--blue)}
+
+/* ── CONFIG BANNER ── */
+#cfg{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:var(--r);padding:.85rem 1.1rem;margin-bottom:1.5rem;font-size:.82rem;color:#fbbf24}
+#cfg strong{display:block;margin-bottom:3px}
+#cfg code{background:rgba(245,158,11,.15);padding:1px 5px;border-radius:3px;font-size:.79rem}
+
+/* ── SIDEBAR COLLAPSE (desktop) ── */
+.sb-toggle{width:100%;padding:7px 10px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:flex-end;color:#6e7681;transition:color .12s;margin-bottom:2px}
+.sb-toggle:hover{color:#8b949e}
+.sb-toggle svg{width:16px;height:16px;flex-shrink:0;transition:transform .2s}
+.sb.collapsed .sb-toggle svg{transform:rotate(180deg)}
+.sb.collapsed{width:56px}
+.sb.collapsed .sb-brand h1 span:not(.brand-icon),.sb.collapsed .sb-brand p,.sb.collapsed .nb span:not(.nb-dot),.sb.collapsed .sb-foot .ci,.sb.collapsed .sb-toggle-lbl{display:none}
+.sb.collapsed .sb-brand{padding:.9rem .85rem;display:flex;align-items:center;justify-content:center}
+.sb.collapsed .nb{justify-content:center;padding:9px 0;margin:2px 6px;width:calc(100% - 12px)}
+.sb.collapsed .nb .nb-dot{opacity:1;width:8px;height:8px}
+.sb.collapsed .nb.active .nb-dot{background:#58a6ff}
+.sb.collapsed .nb:not(.active) .nb-dot{background:#6e7681}
+.sb.collapsed .sb-foot{justify-content:center;padding:.9rem .5rem}
+.sb.collapsed .sb-toggle{justify-content:center}
+.main{transition:margin-left .2s}
+.sb.collapsed~.main{margin-left:56px}
+
+/* ── RESPONSIVE (mobile) ── */
+@media(max-width:760px){
+  .sb{display:none!important}
+  .main{margin-left:0;padding:.85rem .9rem 5rem}
+  /* bottom nav */
+  .mob-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:#0d1117;border-top:1px solid #21262d;z-index:200;padding:0 0 env(safe-area-inset-bottom)}
+  .mob-nav button{flex:1;padding:.65rem 0 .5rem;border:none;background:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit;font-size:.6rem;font-weight:600;color:#6e7681;transition:color .12s;letter-spacing:.02em}
+  .mob-nav button.active{color:#58a6ff}
+  .mob-nav button svg{width:20px;height:20px;stroke-width:1.8}
+  .sg{grid-template-columns:1fr 1fr;gap:.75rem}
+  .gc{padding:1rem 1.1rem}
+  .gc-val{font-size:1.6rem}
+  .dg2{grid-template-columns:1fr}
+  .ph{flex-wrap:wrap;gap:.5rem;margin-bottom:1rem}
+  .ph-title{font-size:1.2rem}
+  .ph-actions{width:100%;justify-content:stretch}
+  .ph-actions .btn{flex:1;justify-content:center}
+  .t th:nth-child(3),.t td:nth-child(3){display:none}
+  .modal{border-radius:18px 18px 0 0;position:fixed;bottom:0;left:0;right:0;max-width:100%;margin:0;animation:slide-up .2s ease}
+  .bd{align-items:flex-end;padding:0}
+  @keyframes slide-up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .cmp-name-col,.cmp-iname{width:80px}
+  .cmp-axis{margin-left:calc(1.25rem + 80px)}
+}
+@media(min-width:761px){.mob-nav{display:none}}
+
+/* ── SEARCH / FILTER TOOLBAR ── */
+.inv-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:1rem}
+.search-wrap{position:relative;flex:1;min-width:160px}
+.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:14px;height:14px;stroke:var(--t3);pointer-events:none}
+.search-in{width:100%;padding:8px 11px 8px 30px;border:1.5px solid var(--bdr);border-radius:8px;font-family:inherit;font-size:.84rem;background:var(--surf2);color:var(--t1);outline:none;transition:border-color .12s}
+.search-in:focus{border-color:var(--blue)}
+.sort-sel{padding:7px 10px;border:1.5px solid var(--bdr);border-radius:8px;font-family:inherit;font-size:.82rem;background:var(--surf2);color:var(--t2);outline:none;cursor:pointer;color:var(--t1)}
+.view-tog{display:flex;border:1.5px solid var(--bdr);border-radius:8px;overflow:hidden;flex-shrink:0}
+.view-tog button{padding:6px 9px;border:none;background:none;cursor:pointer;color:var(--t3);display:flex;align-items:center;transition:all .12s}
+.view-tog button.active{background:var(--surf2);color:var(--t1)}
+.view-tog svg{width:15px;height:15px;stroke-width:1.8}
+
+/* ── ITEM CARDS (grid view) ── */
+.item-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:.85rem;padding:1.25rem}
+.item-card{background:var(--surf2);border:1.5px solid var(--bdr);border-radius:10px;padding:1rem;position:relative;overflow:hidden;transition:border-color .15s,box-shadow .15s}
+.item-card:hover{border-color:color-mix(in srgb,var(--blue) 60%,var(--bdr));box-shadow:0 4px 16px rgba(0,0,0,.15)}
+.ic-stripe{position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:0}
+.ic-name{font-size:.88rem;font-weight:700;margin-bottom:1px;padding-right:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ic-unit{font-size:.7rem;color:var(--t3);margin-bottom:.75rem}
+.ic-qty{font-size:2rem;font-weight:800;letter-spacing:-.04em;line-height:1;margin-bottom:.35rem}
+.ic-bar{height:4px;border-radius:2px;background:var(--bdr);margin-bottom:.7rem;overflow:hidden}
+.ic-bar-fill{height:100%;border-radius:2px;transition:width .4s ease}
+.ic-acts{display:flex;gap:4px}
+.ic-acts .btn{flex:1;justify-content:center;font-size:.7rem;padding:4px 2px}
+.ic-menu{position:absolute;top:8px;right:8px;display:flex;gap:2px}
+
+/* ── CATEGORY STRIPE on table rows ── */
+.t tbody tr td:first-child{border-left:3px solid transparent}
+
+/* ── QTY PROGRESS BAR ── */
+.qty-wrap{display:flex;flex-direction:column;gap:3px;min-width:72px}
+.qty-bar{width:64px;height:4px;border-radius:2px;background:var(--surf2);overflow:hidden}
+.qty-bar-fill{height:100%;border-radius:2px;transition:width .4s ease}
+
+/* ── FLASH ANIMATION ── */
+@keyframes qty-flash-g{0%{background:rgba(34,197,94,.25)}100%{background:transparent}}
+@keyframes qty-flash-r{0%{background:rgba(239,68,68,.25)}100%{background:transparent}}
+.flash-g td{animation:qty-flash-g .9s ease}
+.flash-r td{animation:qty-flash-r .9s ease}
+
+/* ── ALERT BANNER ── */
+#low-banner{display:none;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:var(--r);padding:.75rem 1.1rem;margin-bottom:1.25rem;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+#low-banner.visible{display:flex}
+.lb-left{display:flex;align-items:flex-start;gap:10px}
+.lb-pulse{width:8px;height:8px;border-radius:50%;background:#ef4444;flex-shrink:0;margin-top:3px;animation:lb-pulse 1.5s infinite}
+@keyframes lb-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+.lb-msg{font-size:.8rem;color:var(--t1);line-height:1.5}
+.lb-msg strong{color:#f87171}
+
+/* ── QUICK LOG PANEL ── */
+.ql-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.75rem;padding:1.1rem 1.25rem}
+.ql-card{background:var(--surf2);border:1.5px solid var(--bdr);border-radius:9px;padding:.8rem;display:flex;flex-direction:column;gap:.5rem;transition:border-color .12s}
+.ql-card:hover{border-color:var(--bdr)}
+.ql-name{font-size:.82rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ql-qty{font-size:1.3rem;font-weight:800;letter-spacing:-.03em;line-height:1}
+.ql-acts{display:flex;gap:5px}
+.ql-acts button{flex:1;padding:5px 6px;border-radius:6px;border:none;font-family:inherit;font-size:.72rem;font-weight:700;cursor:pointer;transition:all .12s}
+.ql-use{background:rgba(239,68,68,.15);color:#f87171}.ql-use:hover{background:rgba(239,68,68,.25)}
+.ql-add{background:rgba(34,197,94,.15);color:#4ade80}.ql-add:hover{background:rgba(34,197,94,.25)}
+
+/* ── SHOPPING LIST ── */
+.sl-item{display:flex;align-items:center;gap:10px;padding:10px 1.25rem;border-bottom:1px solid var(--bdr);transition:background .1s}
+.sl-item:last-child{border-bottom:none}
+.sl-item:hover{background:var(--surf2)}
+.sl-check{width:18px;height:18px;border-radius:5px;border:2px solid var(--bdr);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .12s;font-size:.65rem;color:transparent;font-weight:800}
+.sl-check.done{background:#22c55e;border-color:#22c55e;color:#fff}
+.sl-info{flex:1}
+.sl-name{font-size:.87rem;font-weight:600}
+.sl-meta{font-size:.72rem;color:var(--t3);margin-top:1px}
+.sl-stock{font-size:.76rem;font-weight:700;padding:2px 8px;border-radius:12px;flex-shrink:0}
+.sl-stock.crit{background:rgba(239,68,68,.12);color:#f87171}
+.sl-stock.warn{background:rgba(245,158,11,.12);color:#fbbf24}
+
+/* ── STOCK DRILL-DOWN MODAL ── */
+.sdm-row{display:flex;align-items:center;gap:10px;padding:9px 1.25rem;border-bottom:1px solid var(--bdr)}
+.sdm-row:last-child{border-bottom:none}
+.sdm-name{flex:1;font-size:.87rem;font-weight:600}
+.sdm-qty{font-size:.87rem;font-weight:700}
+
+/* ── BUYER PILLS ── */
+.buyer-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:all .12s;white-space:nowrap}
+.buyer-pill.unassigned{background:var(--surf2);color:var(--t3);border:1.5px dashed var(--bdr)}
+.buyer-pill.unassigned:hover{border-color:var(--blue);color:var(--blue)}
+.sl-buyer-bar{display:flex;gap:5px;flex-wrap:wrap;padding:.75rem 1.25rem;border-bottom:1px solid var(--bdr)}
+.sl-filter-btn{padding:4px 12px;border-radius:20px;font-size:.75rem;font-weight:600;cursor:pointer;border:1.5px solid var(--bdr);background:none;color:var(--t2);font-family:inherit;transition:all .12s}
+.sl-filter-btn:hover:not(.active){background:var(--surf2)}
+.sl-filter-btn.active{border-color:transparent;color:#fff}
+.buyer-avatar{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800;color:#fff;flex-shrink:0}
+
+/* ── NOTES ── */
+.i-note{font-size:.7rem;color:var(--t3);margin-top:2px;font-style:italic}
+.fg textarea{width:100%;padding:9px 11px;border:1.5px solid var(--bdr);border-radius:8px;font-size:.875rem;font-family:inherit;outline:none;background:var(--surf2);color:var(--t1);transition:border-color .12s;resize:vertical;min-height:60px}
+.fg textarea:focus{border-color:var(--blue)}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     FIREBASE CONFIG — fill in before deploying
+     See SETUP.md for step-by-step instructions
+════════════════════════════════════════════ -->
+<script>
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyC0mPHIbzheN-oN2jIIu3mCg41m0QGkAMA",
+  authDomain:        "home-inventory-b57e5.firebaseapp.com",
+  projectId:         "home-inventory-b57e5",
+  storageBucket:     "home-inventory-b57e5.firebasestorage.app",
+  messagingSenderId: "1009688976396",
+  appId:             "1:1009688976396:web:619174d7765e49b75f2229"
+};
+</script>
+
+<div class="shell">
+
+<!-- ── SIDEBAR ── -->
+<aside class="sb" id="sidebar">
+  <div class="sb-brand">
+    <h1><span class="brand-icon" style="color:var(--blue);font-size:1.1rem;margin-right:2px">&#9632;</span><span>Home <span style="color:var(--blue)">Inv</span></span></h1>
+    <p>Household supply tracker</p>
+  </div>
+  <button class="sb-toggle" onclick="toggleSidebar()" title="Collapse sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    <span class="sb-toggle-lbl" style="font-size:.7rem;margin-left:4px;font-weight:600;letter-spacing:.03em">Collapse</span>
+  </button>
+  <nav class="sb-nav">
+    <button class="nb active" onclick="showTab('dashboard',this)"><span class="nb-dot"></span><span>Dashboard</span></button>
+    <button class="nb" onclick="showTab('inventory',this)"><span class="nb-dot"></span><span>Inventory</span></button>
+    <button class="nb" onclick="showTab('log',this)"><span class="nb-dot"></span><span>Activity Log</span></button>
+    <button class="nb" onclick="showTab('shopping',this)"><span class="nb-dot"></span><span>Shopping List</span></button>
+    <button class="nb" onclick="showTab('settings',this)"><span class="nb-dot"></span><span>Settings</span></button>
+  </nav>
+  <div class="sb-foot">
+    <span class="ci" id="ci"><span class="ci-dot"></span><span id="ci-txt">Not connected</span></span>
+    <button class="tt" onclick="toggleTheme()" title="Toggle dark / light mode"></button>
+  </div>
+</aside>
+
+<!-- ── MOBILE BOTTOM NAV ── -->
+<nav class="mob-nav" id="mob-nav">
+  <button class="active" onclick="showTab('dashboard',this,true)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Dashboard
+  </button>
+  <button onclick="showTab('inventory',this,true)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 3H8a1 1 0 0 0-1 1v3h10V4a1 1 0 0 0-1-1z"/></svg>
+    Inventory
+  </button>
+  <button onclick="showTab('log',this,true)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    Log
+  </button>
+  <button onclick="showTab('shopping',this,true)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+    Shop
+  </button>
+  <button onclick="showTab('settings',this,true)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    Settings
+  </button>
+</nav>
+
+<!-- ── MAIN ── -->
+<main class="main">
+
+<div id="cfg">
+  <strong>Firebase not configured</strong>
+  Fill in <code>FIREBASE_CONFIG</code> at the top of <code>index.html</code>. See <code>SETUP.md</code>.
+</div>
+
+<!-- ════ DASHBOARD ════ -->
+<div id="tab-dashboard" class="tab active">
+  <div class="ph">
+    <div>
+      <div class="ph-title" id="greeting">Good day</div>
+      <div class="ph-sub" id="today"></div>
+    </div>
+    <div class="ph-actions">
+      <button class="btn btn-success btn-sm" onclick="openTxnModal(null,'used')">Log Used</button>
+      <button class="btn btn-p btn-sm" onclick="openTxnModal(null,'purchased')">New Purchase</button>
+    </div>
+  </div>
+
+  <!-- Low stock alert banner -->
+  <div id="low-banner">
+    <div class="lb-left">
+      <div class="lb-pulse"></div>
+      <div class="lb-msg" id="lb-msg"></div>
+    </div>
+    <button class="btn btn-sm" style="background:rgba(239,68,68,.2);color:#f87171;border:1px solid rgba(239,68,68,.35);flex-shrink:0" onclick="showTab('shopping',document.querySelectorAll('.nb')[3])">View Shopping List</button>
+  </div>
+
+  <div class="sg">
+    <div class="gc blue">
+      <div class="gc-lbl">Total Items</div>
+      <div class="gc-val" id="d-total">—</div>
+      <div class="gc-sub">tracked supplies</div>
+    </div>
+    <div class="gc purple">
+      <div class="gc-lbl">Categories</div>
+      <div class="gc-val" id="d-cats">—</div>
+      <div class="gc-sub">item groups</div>
+    </div>
+    <div class="gc amber" style="cursor:pointer" onclick="openStockModal('low')" title="Click to see low stock items">
+      <div class="gc-lbl">Low Stock</div>
+      <div class="gc-val" id="d-low">—</div>
+      <div class="gc-sub">tap to see items ↗</div>
+    </div>
+    <div class="gc red" style="cursor:pointer" onclick="openStockModal('crit')" title="Click to see critical items">
+      <div class="gc-lbl">Critical</div>
+      <div class="gc-val" id="d-crit">—</div>
+      <div class="gc-sub">tap to see items ↗</div>
+    </div>
+  </div>
+
+  <div class="dg2">
+    <div class="card">
+      <div class="ch">
+        <span class="ct">Item Usage Comparison — Last 6 Months</span>
+        <span style="font-size:.7rem;color:var(--t3)">Top 5 most used</span>
+      </div>
+      <div id="usage-chart"></div>
+    </div>
+    <div class="card">
+      <div class="ch"><span class="ct">Top Used This Month</span></div>
+      <div id="top-used"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="ct">Category Breakdown</span></div>
+    <div id="cat-breakdown"></div>
+  </div>
+
+  <div class="card">
+    <div class="ch">
+      <span class="ct">Quick Log</span>
+      <span style="font-size:.7rem;color:var(--t3)">Most used items</span>
+    </div>
+    <div id="quick-log"><div class="empty"><div class="e-ttl">No usage history yet</div><div class="e-sub">Log some items and your top picks will appear here.</div></div></div>
+  </div>
+</div>
+
+<!-- ════ INVENTORY ════ -->
+<div id="tab-inventory" class="tab">
+  <div class="ph">
+    <div>
+      <div class="ph-title">Inventory</div>
+      <div class="ph-sub">Manage your household supplies</div>
+    </div>
+    <div class="ph-actions">
+      <button class="btn btn-success btn-sm" onclick="openTxnModal(null,'used')">Log Used</button>
+      <button class="btn btn-g btn-sm" onclick="openTxnModal(null,'purchased')">Log Purchase</button>
+      <button class="btn btn-p btn-sm" onclick="openAddItem()">+ Add Item</button>
+    </div>
+  </div>
+
+  <div class="inv-toolbar">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="search-in" id="inv-search" type="text" placeholder="Search items…" oninput="_invSearch=this.value;renderItems(window._items)" />
+    </div>
+    <select class="sort-sel" id="inv-sort" onchange="_invSort=this.value;renderItems(window._items)">
+      <option value="low">Low stock first</option>
+      <option value="cat">Category → A–Z</option>
+      <option value="az">A → Z</option>
+      <option value="za">Z → A</option>
+      <option value="qty-asc">Qty ↑</option>
+      <option value="qty-desc">Qty ↓</option>
+    </select>
+    <div class="view-tog">
+      <button id="vt-table" class="active" onclick="setInvView('table')" title="Table view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg>
+      </button>
+      <button id="vt-card" onclick="setInvView('card')" title="Card view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="9" rx="1"/><rect x="3" y="15" width="7" height="6" rx="1"/><rect x="14" y="15" width="7" height="6" rx="1"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="cp-wrap" id="cat-pills"></div>
+
+  <div class="card" id="inv-card-wrap">
+    <div id="inv-empty" class="empty" style="display:none">
+      <div class="e-ttl">No items yet</div>
+      <div class="e-sub">Add your first supply item to get started.</div>
+      <button class="btn btn-p btn-sm" onclick="openAddItem()">+ Add Item</button>
+    </div>
+    <div style="overflow-x:auto" id="inv-tbl-wrap">
+      <table class="t" id="inv-tbl">
+        <thead><tr>
+          <th>Item</th>
+          <th>Category</th>
+          <th>In Stock</th>
+          <th>Thresholds</th>
+          <th style="text-align:right">Actions</th>
+        </tr></thead>
+        <tbody id="inv-body"></tbody>
+      </table>
+    </div>
+  </div>
+  <div id="inv-cards" style="display:none"></div>
+</div>
+
+<!-- ════ LOG ════ -->
+<div id="tab-log" class="tab">
+  <div class="ph">
+    <div>
+      <div class="ph-title">Activity Log</div>
+      <div class="ph-sub">All inventory transactions, newest first</div>
+    </div>
+    <button class="btn btn-g btn-sm" onclick="clearLog()" style="color:#f87171;border-color:rgba(239,68,68,.35)">Clear All</button>
+  </div>
+  <div class="card">
+    <div id="log-empty" class="empty" style="display:none">
+      <div class="e-ttl">No activity yet</div>
+      <div class="e-sub">Transactions you log will appear here.</div>
+    </div>
+    <div id="log-list"></div>
+  </div>
+</div>
+
+<!-- ════ SHOPPING LIST ════ -->
+<div id="tab-shopping" class="tab">
+  <div class="ph">
+    <div>
+      <div class="ph-title">Shopping List</div>
+      <div class="ph-sub">Items below their restock threshold</div>
+    </div>
+    <button class="btn btn-g btn-sm" onclick="renderShoppingList()" style="gap:5px">↻ Refresh</button>
+  </div>
+  <div class="card">
+    <div class="sl-buyer-bar" id="sl-buyer-bar"></div>
+    <div id="sl-empty" class="empty" style="display:none">
+      <div class="e-ttl">All stocked up!</div>
+      <div class="e-sub">No items below their restock threshold right now.</div>
+    </div>
+    <div id="sl-list"></div>
+  </div>
+</div>
+
+<!-- ════ SETTINGS ════ -->
+<div id="tab-settings" class="tab">
+  <div class="ph">
+    <div><div class="ph-title">Settings</div><div class="ph-sub">Categories and stock thresholds</div></div>
+  </div>
+
+  <div class="card">
+    <div class="ch">
+      <span class="ct">Buyers</span>
+      <button class="btn btn-p btn-sm" onclick="openAddBuyer()">+ Add Buyer</button>
+    </div>
+    <div id="buyer-list"></div>
+    <div id="buyer-empty" class="empty" style="display:none">
+      <div class="e-ttl">No buyers yet</div>
+      <div class="e-sub">Add buyers to assign shopping list items.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch">
+      <span class="ct">Sources</span>
+      <button class="btn btn-p btn-sm" onclick="openAddSource()">+ Add Source</button>
+    </div>
+    <div id="src-list"></div>
+    <div id="src-empty" class="empty" style="display:none">
+      <div class="e-ttl">No sources yet</div>
+      <div class="e-sub">Add sources like Supermarket, Costco, or Online.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch">
+      <span class="ct">Categories</span>
+      <button class="btn btn-p btn-sm" onclick="openAddCat()">+ Add Category</button>
+    </div>
+    <div id="cat-list"></div>
+    <div id="cat-empty" class="empty" style="display:none">
+      <div class="e-ttl">No categories yet</div>
+      <div class="e-sub">Add categories to organise items by room or type.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch">
+      <span class="ct">Stock Thresholds</span>
+      <span style="font-size:.7rem;color:var(--t3)">Saves automatically</span>
+    </div>
+    <div id="thr-list"></div>
+    <div id="thr-empty" class="empty" style="display:none">
+      <div class="e-ttl">No items</div>
+      <div class="e-sub">Add items in Inventory first.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="ct">Data Backup</span></div>
+    <div style="padding:1rem 1.25rem;font-size:.83rem;color:var(--t2)">
+      <p style="margin-bottom:.85rem;line-height:1.6">Export all items, categories, and activity log as a JSON file. Use this to back up or restore your data.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-g btn-sm" onclick="exportBackup()">Export Backup JSON</button>
+        <label class="btn btn-g btn-sm" style="cursor:pointer">Import Backup JSON<input type="file" accept=".json" style="display:none" onchange="importBackup(this)"></label>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="ct">About</span></div>
+    <div style="padding:1rem 1.25rem;font-size:.83rem;color:var(--t2);line-height:1.7">
+      <p>Real-time multi-user home inventory tracker synced via Firebase Firestore.</p>
+      <p style="margin-top:6px;color:var(--t3);font-size:.75rem">Auto-add to cart — coming in a future update</p>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<!-- ════════ MODALS ════════ -->
+
+<!-- Add / Edit Item -->
+<div class="bd" id="m-item">
+  <div class="modal">
+    <div class="m-title" id="item-m-title">Add Item</div>
+    <input type="hidden" id="ei-id" />
+    <div class="fg"><label>Item Name</label><input type="text" id="ei-name" placeholder="e.g. Water Bottles" /></div>
+    <div class="fg"><label>Unit</label><input type="text" id="ei-unit" placeholder="e.g. bottles, rolls, boxes" /></div>
+    <div class="fg">
+      <label style="display:flex;align-items:center;justify-content:space-between">
+        Category
+        <button type="button" class="btn btn-g btn-xs" id="ic-toggle" onclick="toggleInlineCat()" style="text-transform:none;letter-spacing:0;font-weight:600">+ New category</button>
+      </label>
+      <select id="ei-cat"><option value="">Uncategorized</option></select>
+      <div id="inline-cat" style="display:none;margin-top:8px;padding:10px 12px;background:var(--surf2);border-radius:8px;border:1px solid var(--bdr)">
+        <input type="text" id="ic-name" placeholder="Category name" style="width:100%;padding:7px 10px;border:1.5px solid var(--bdr);border-radius:7px;font-family:inherit;font-size:.84rem;background:var(--surf);color:var(--t1);outline:none;margin-bottom:8px" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--bdr)'" />
+        <div class="cp-pick" id="ic-col-pick"></div>
+        <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end">
+          <button type="button" class="btn btn-g btn-xs" onclick="toggleInlineCat()">Cancel</button>
+          <button type="button" class="btn btn-p btn-xs" onclick="saveInlineCat()">Add category</button>
+        </div>
+      </div>
+    </div>
+    <div class="fg"><label>Starting Quantity</label><input type="number" id="ei-qty" min="0" value="0" /></div>
+    <div class="fg"><label>Notes <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t3)">(optional)</span></label><textarea id="ei-notes" placeholder="e.g. Buy the 3-pack" rows="2"></textarea></div>
+    <div class="fg">
+      <label style="display:flex;align-items:center;justify-content:space-between">
+        Source <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t3)">(where to buy)</span>
+        <button type="button" class="btn btn-g btn-xs" onclick="toggleInlineSrc()" style="text-transform:none;letter-spacing:0;font-weight:600">+ New source</button>
+      </label>
+      <select id="ei-src"><option value="">— None —</option></select>
+      <div id="inline-src" style="display:none;margin-top:8px;padding:10px 12px;background:var(--surf2);border-radius:8px;border:1px solid var(--bdr)">
+        <input type="text" id="is-name" placeholder="e.g. Supermarket, Costco, Online" style="width:100%;padding:7px 10px;border:1.5px solid var(--bdr);border-radius:7px;font-family:inherit;font-size:.84rem;background:var(--surf);color:var(--t1);outline:none;margin-bottom:8px" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--bdr)'" />
+        <div style="display:flex;gap:6px;justify-content:flex-end">
+          <button type="button" class="btn btn-g btn-xs" onclick="toggleInlineSrc()">Cancel</button>
+          <button type="button" class="btn btn-p btn-xs" onclick="saveInlineSrc()">Add source</button>
+        </div>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Default Buyer <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t3)">(auto-assigned on shopping list)</span></label>
+      <select id="ei-buyer"><option value="">— None —</option></select>
+    </div>
+    <div class="mf">
+      <button class="btn btn-g btn-sm" onclick="cm('m-item')">Cancel</button>
+      <button class="btn btn-p btn-sm" onclick="saveItem()">Save Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- Transaction (batch) -->
+<div class="bd" id="m-txn">
+  <div class="modal wide">
+    <div class="m-title">Log Transaction</div>
+    <div class="at">
+      <button id="t-used" class="active used" onclick="setTA('used',this)">Used</button>
+      <button id="t-purch" onclick="setTA('purchased',this)">Purchased</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 84px 24px;gap:6px;padding:0 0 5px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3)">
+      <span>Item</span><span>Qty</span><span></span>
+    </div>
+    <div id="txn-rows"></div>
+    <button class="btn btn-g btn-sm" onclick="addTRow()" style="margin-top:7px;width:100%;justify-content:center">+ Add another item</button>
+    <div class="mf">
+      <button class="btn btn-g btn-sm" onclick="cm('m-txn')">Cancel</button>
+      <button class="btn btn-p btn-sm" id="txn-btn" onclick="confirmTxn()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Override -->
+<div class="bd" id="m-ovr">
+  <div class="modal">
+    <div class="m-title">Set Quantity</div>
+    <div class="m-sub" id="ovr-sub"></div>
+    <input type="hidden" id="ovr-id" />
+    <div class="fg"><label>New Quantity</label>
+      <div class="iu"><input type="number" id="ovr-qty" min="0" value="0" /><span class="ut" id="ovr-unit"></span></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-g btn-sm" onclick="cm('m-ovr')">Cancel</button>
+      <button class="btn btn-p btn-sm" onclick="confirmOvr()">Set Quantity</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Item -->
+<div class="bd" id="m-del">
+  <div class="modal">
+    <div class="m-title">Delete Item</div>
+    <div class="m-sub" id="del-sub"></div>
+    <input type="hidden" id="del-id" />
+    <div class="mf">
+      <button class="btn btn-g btn-sm" onclick="cm('m-del')">Cancel</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmDel()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Category -->
+<div class="bd" id="m-cat">
+  <div class="modal">
+    <div class="m-title">Add Category</div>
+    <div class="fg"><label>Category Name</label><input type="text" id="cat-nm" placeholder="e.g. Cleaning, Bathroom, Food" /></div>
+    <div class="fg"><label>Colour</label><div class="cp-pick" id="col-pick"></div></div>
+    <div class="mf">
+      <button class="btn btn-g btn-sm" onclick="cm('m-cat')">Cancel</button>
+      <button class="btn btn-p btn-sm" onclick="saveCat()">Add Category</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Source -->
+<div class="bd" id="m-src">
+  <div class="modal">
+    <div class="m-title">Add Source</div>
+    <div class="fg"><label>Name</label><input type="text" id="src-nm" placeholder="e.g. Supermarket, Costco, Online" /></div>
+    <div class="mf">
+      <button class="btn btn-g btn-sm" onclick="cm('m-src')">Cancel</button>
+      <button class="btn btn-p btn-sm" onclick="saveSource()">Add Source</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Buyer -->
+<div class="bd" id="m-buyer">
+  <div class="modal">
+    <div class="m-title">Add Buyer</div>
+    <div class="fg"><label>Name</label><input type="text" id="buyer-nm" placeholder="e.g. Andrew, Gloria" /></div>
+    <div class="fg"><label>Colour</label><div class="cp-pick" id="buyer-col-pick"></div></div>
+    <div class="mf">
+      <button class="btn btn-g btn-sm" onclick="cm('m-buyer')">Cancel</button>
+      <button class="btn btn-p btn-sm" onclick="saveBuyer()">Add Buyer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Stock Drill-down -->
+<div class="bd" id="m-stock">
+  <div class="modal">
+    <div class="m-title" id="stock-m-title">Low Stock Items</div>
+    <div id="stock-m-list" style="max-height:340px;overflow-y:auto;margin:0 -1.5rem;padding:0 0 .5rem"></div>
+    <div class="mf">
+      <button class="btn btn-g btn-sm" onclick="cm('m-stock')">Close</button>
+      <button class="btn btn-p btn-sm" onclick="cm('m-stock');showTab('shopping',document.querySelectorAll(\'.nb\')[3])">Go to Shopping List</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ SCRIPT ════════ -->
+<script>
+const CAT_COLORS=['#3b82f6','#8b5cf6','#22c55e','#f59e0b','#ef4444','#06b6d4','#f97316','#ec4899'];
+let db=null,isConn=false;
+let _txnAction='used',_txnRows=[],_selColor=CAT_COLORS[0],_catFilter='all';
+let _invSearch='',_invSort='low',_invView='table';
+let _cartDone=new Set(),_slBuyerFilter='all',_selBuyerColor=CAT_COLORS[0];
+window._items={};window._cats={};window._logs=[];window._buyers={};window._sources={};
+
+/* ── quantity flash tracker ── */
+const _prevQty={};
+function flashQtyChange(id,newQty){
+  if(_prevQty[id]===undefined){_prevQty[id]=newQty;return;}
+  if(_prevQty[id]===newQty){return;}
+  const up=newQty>_prevQty[id];
+  _prevQty[id]=newQty;
+  // Find the tr for this item and flash it
+  const rows=document.querySelectorAll('#inv-body tr[data-id="'+id+'"]');
+  rows.forEach(r=>{r.classList.remove('flash-g','flash-r');void r.offsetWidth;r.classList.add(up?'flash-g':'flash-r');setTimeout(()=>r.classList.remove('flash-g','flash-r'),900);});
+}
+
+/* ── Firebase ── */
+function init(){
+  try{
+    if(FIREBASE_CONFIG.apiKey==='YOUR_API_KEY'){initDemo();return;}
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db=firebase.firestore();
+    const el=document.getElementById('ci');
+    el.className='ci ok';
+    document.getElementById('ci-txt').textContent='Connected';
+    document.getElementById('cfg').style.display='none';
+    isConn=true;
+    listen();
+  }catch(e){console.error(e);initDemo();}
+}
+function initDemo(){
+  document.getElementById('ci-txt').textContent='Demo mode';
+  renderItems({});renderLogs([]);renderCats({});renderThresholds({});
+  updateDash({},{});renderUsageChart([]);renderTopUsed([]);renderCatBreakdown({},{});
+  renderShoppingList();renderQuickLog();renderBuyerSettings({});renderSourceSettings({});
+}
+
+function listen(){
+  db.collection('categories').orderBy('createdAt').onSnapshot(snap=>{
+    const c={};snap.forEach(d=>c[d.id]={id:d.id,...d.data()});
+    window._cats=c;renderCats(c);renderCatPills(c);renderCatBreakdown(window._items,c);updateDash(window._items,c);
+  });
+  db.collection('buyers').orderBy('createdAt').onSnapshot(snap=>{
+    const b={};snap.forEach(d=>b[d.id]={id:d.id,...d.data()});
+    window._buyers=b;renderBuyerSettings(b);renderShoppingList();popBuyerSel(document.getElementById('ei-buyer')?.value||'');
+  });
+  db.collection('sources').orderBy('createdAt').onSnapshot(snap=>{
+    const s={};snap.forEach(d=>s[d.id]={id:d.id,...d.data()});
+    window._sources=s;renderSourceSettings(s);popSrcSel('');
+  });
+  db.collection('items').orderBy('createdAt').onSnapshot(snap=>{
+    const it={};snap.forEach(d=>it[d.id]={id:d.id,...d.data()});
+    // flash changed quantities
+    Object.keys(it).forEach(id=>flashQtyChange(id,it[id].quantity??0));
+    window._items=it;renderItems(it);renderThresholds(it);renderCatBreakdown(it,window._cats);updateDash(it,window._cats);renderShoppingList();renderQuickLog();
+  });
+  db.collection('logs').orderBy('timestamp','desc').limit(300).onSnapshot(snap=>{
+    const lg=[];snap.forEach(d=>lg.push({id:d.id,...d.data()}));
+    window._logs=lg;renderLogs(lg);renderUsageChart(lg);renderTopUsed(lg);renderQuickLog();
+  });
+}
+
+/* ── Dashboard ── */
+function updateDash(items,cats){
+  const v=Object.values(items);
+  const low=v.filter(i=>(i.quantity??0)<=(i.warnAt??3)&&(i.quantity??0)>(i.buyAt??1));
+  const crit=v.filter(i=>(i.quantity??0)<=(i.buyAt??1));
+  set('d-total',v.length||'0');set('d-cats',Object.keys(cats).length||'0');
+  set('d-low',low.length||'0');set('d-crit',crit.length||'0');
+  const h=new Date().getHours();
+  set('greeting',h<12?'Good morning':h<17?'Good afternoon':'Good evening');
+  set('today',new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}));
+  // Alert banner
+  const banner=document.getElementById('low-banner');
+  const msg=document.getElementById('lb-msg');
+  if(crit.length||low.length){
+    banner.classList.add('visible');
+    const parts=[];
+    if(crit.length)parts.push(`<strong>${crit.length} critical</strong> item${crit.length!==1?'s':''} need restocking`);
+    if(low.length)parts.push(`<strong>${low.length}</strong> running low`);
+    msg.innerHTML=parts.join(' · ');
+  }else{
+    banner.classList.remove('visible');
+  }
+  // Store for drill-down
+  window._lowItems=low;window._critItems=crit;
+}
+
+function renderUsageChart(logs){
+  const el=document.getElementById('usage-chart');
+  if(!el)return;
+  const now=new Date();
+  const months=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    months.push({key:`${d.getFullYear()}-${pad(d.getMonth()+1)}`,lbl:d.toLocaleString('default',{month:'short'})});
+  }
+  // Build per-item, per-month usage totals
+  const byItem={};
+  logs.filter(l=>l.action==='used'&&!l.undone).forEach(l=>{
+    const ts=l.timestamp?.toDate?l.timestamp.toDate():new Date(l.timestamp||0);
+    const mKey=`${ts.getFullYear()}-${pad(ts.getMonth()+1)}`;
+    if(!byItem[l.itemId]){
+      const cat=window._cats[window._items[l.itemId]?.categoryId];
+      byItem[l.itemId]={name:l.itemName,color:cat?.color||null,months:{},total:0};
+    }
+    byItem[l.itemId].months[mKey]=(byItem[l.itemId].months[mKey]||0)+(l.amount||0);
+    byItem[l.itemId].total+=(l.amount||0);
+  });
+  const COLORS=['#3b82f6','#8b5cf6','#22c55e','#f59e0b','#ef4444','#06b6d4'];
+  const items=Object.values(byItem).sort((a,b)=>b.total-a.total).slice(0,5)
+    .map((it,i)=>({...it,color:it.color||COLORS[i%COLORS.length]}));
+  if(!items.length){el.innerHTML='<div class="cmp-empty">No usage data yet. Log some items to see the comparison.</div>';return;}
+  const globalMax=Math.max(...items.flatMap(it=>months.map(m=>it.months[m.key]||0)),1);
+  const BAR_H=56;
+  const headerHtml=`<div class="cmp-wrap" style="padding-bottom:0">
+    <div class="cmp-head">
+      <div class="cmp-name-col"></div>
+      <div style="display:flex;flex:1;gap:4px">${months.map(m=>`<div class="cmp-mh">${m.lbl}</div>`).join('')}</div>
+    </div>
+  </div>`;
+  const rowsHtml=items.map(it=>{
+    const cells=months.map(m=>{
+      const v=it.months[m.key]||0;
+      const h=v>0?Math.max(3,Math.round((v/globalMax)*BAR_H)):0;
+      return `<div class="cmp-cell">
+        <div class="cmp-bar" style="height:${h}px;background:${it.color}" data-v="${v} ${esc(it.name.split(' ')[0])}"></div>
+        <div class="cmp-val">${v>0?v:''}</div>
+      </div>`;
+    }).join('');
+    return `<div class="cmp-row">
+      <div class="cmp-iname"><span class="cd" style="background:${it.color}"></span>${esc(it.name)}</div>
+      <div class="cmp-cells">${cells}</div>
+    </div>`;
+  }).join('');
+  el.innerHTML=headerHtml+`<div class="cmp-axis"></div><div style="padding:0 1.25rem">${rowsHtml}</div>`;
+}
+
+function renderTopUsed(logs){
+  const el=document.getElementById('top-used');
+  const now=new Date();
+  const thisM=`${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+  const by={};
+  logs.filter(l=>l.action==='used'&&!l.undone).filter(l=>{
+    const ts=l.timestamp?.toDate?l.timestamp.toDate():new Date(l.timestamp||0);
+    return `${ts.getFullYear()}-${pad(ts.getMonth()+1)}`===thisM;
+  }).forEach(l=>{
+    if(!by[l.itemId])by[l.itemId]={name:l.itemName,unit:l.unit,n:0};
+    by[l.itemId].n+=(l.amount||0);
+  });
+  const arr=Object.values(by).sort((a,b)=>b.n-a.n).slice(0,6);
+  const max=Math.max(...arr.map(i=>i.n),1);
+  if(!arr.length){el.innerHTML='<div class="empty"><div class="e-ttl">No usage this month</div><div class="e-sub">Log some items to see trends.</div></div>';return;}
+  el.innerHTML=arr.map(it=>`
+    <div class="bdr-row">
+      <div class="bdr-name">${esc(it.name)}</div>
+      <div class="bdr-track"><div class="bdr-fill" style="width:${Math.round(it.n/max*100)}%;background:var(--blue)"></div></div>
+      <div class="bdr-count">${it.n} ${esc(it.unit||'')}</div>
+    </div>`).join('');
+}
+
+function renderCatBreakdown(items,cats){
+  const el=document.getElementById('cat-breakdown');
+  const v=Object.values(items);
+  if(!v.length){el.innerHTML='<div class="empty"><div class="e-ttl">No items yet</div></div>';return;}
+  const counts={};
+  v.forEach(i=>{const k=i.categoryId||'__none__';counts[k]=(counts[k]||0)+1;});
+  const total=v.length;
+  const rows=Object.entries(counts).map(([k,n])=>{
+    const c=cats[k];return{name:c?c.name:'Uncategorized',color:c?c.color:'#6b7280',n};
+  }).sort((a,b)=>b.n-a.n);
+  el.innerHTML=rows.map(r=>{
+    const pct=Math.round(r.n/total*100);
+    return `<div class="bdr-row">
+      <div class="bdr-name"><span class="cd" style="background:${r.color}"></span>${esc(r.name)}</div>
+      <div class="bdr-track"><div class="bdr-fill" style="width:${pct}%;background:${r.color}"></div></div>
+      <div class="bdr-pct">${pct}%</div>
+      <div class="bdr-count">${r.n} item${r.n!==1?'s':''}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── Items ── */
+function setInvView(v){
+  _invView=v;
+  document.getElementById('vt-table').classList.toggle('active',v==='table');
+  document.getElementById('vt-card').classList.toggle('active',v==='card');
+  renderItems(window._items);
+}
+
+function getFilteredSortedItems(items){
+  const q=_invSearch.toLowerCase().trim();
+  let arr=Object.values(items).filter(it=>{
+    if(_catFilter==='all')return true;
+    if(_catFilter==='none')return!it.categoryId;
+    return it.categoryId===_catFilter;
+  }).filter(it=>!q||it.name.toLowerCase().includes(q)||(it.unit||'').toLowerCase().includes(q)||(it.notes||'').toLowerCase().includes(q));
+  const score=i=>{const qty=i.quantity??0,wa=i.warnAt??3,ba=i.buyAt??1;return qty<=ba?0:qty<=wa?1:2;};
+  switch(_invSort){
+    case'low': arr.sort((a,b)=>score(a)-score(b)||a.name.localeCompare(b.name));break;
+    case'cat': arr.sort((a,b)=>{const ca=window._cats[a.categoryId]?.name||'￿',cb=window._cats[b.categoryId]?.name||'￿';return ca.localeCompare(cb)||a.name.localeCompare(b.name);});break;
+    case'az':  arr.sort((a,b)=>a.name.localeCompare(b.name));break;
+    case'za':  arr.sort((a,b)=>b.name.localeCompare(a.name));break;
+    case'qty-asc': arr.sort((a,b)=>(a.quantity??0)-(b.quantity??0));break;
+    case'qty-desc':arr.sort((a,b)=>(b.quantity??0)-(a.quantity??0));break;
+  }
+  return arr;
+}
+
+function renderItems(items){
+  const empty=document.getElementById('inv-empty');
+  const tblWrap=document.getElementById('inv-tbl-wrap');
+  const cardsEl=document.getElementById('inv-cards');
+  const cardWrap=document.getElementById('inv-card-wrap');
+
+  if(!Object.keys(items).length){
+    empty.style.display='block';tblWrap.style.display='none';cardsEl.style.display='none';
+    return;
+  }
+  empty.style.display='none';
+
+  const arr=getFilteredSortedItems(items);
+
+  if(_invView==='card'){
+    tblWrap.style.display='none';cardWrap.style.display='none';cardsEl.style.display='block';
+    if(!arr.length){cardsEl.innerHTML='<div class="empty"><div class="e-ttl">No results</div><div class="e-sub">Try a different search or filter.</div></div>';return;}
+    cardsEl.innerHTML='<div class="item-cards">'+arr.map(it=>{
+      const qty=it.quantity??0,wa=it.warnAt??3,ba=it.buyAt??1;
+      const isc=qty<=ba,isw=qty<=wa&&!isc;
+      const qc=isc?'crit':isw?'warn':'ok';
+      const cat=window._cats[it.categoryId];
+      const stripe=cat?cat.color:'#6b7280';
+      const barPct=wa>0?Math.min(100,Math.round(qty/Math.max(wa*2,qty+1)*100)):100;
+      const barColor=isc?'#ef4444':isw?'#f59e0b':'#22c55e';
+      const noteHtml=it.notes?`<div class="i-note">${esc(it.notes)}</div>`:'';
+      return `<div class="item-card">
+        <div class="ic-stripe" style="background:${stripe}"></div>
+        <div class="ic-name">${esc(it.name)}</div>
+        <div class="ic-unit">${esc(it.unit)}${it.notes?` · <span style="font-style:italic">${esc(it.notes)}</span>`:''}</div>
+        <div class="ic-qty" style="color:${barColor}">${qty}</div>
+        <div class="ic-bar"><div class="ic-bar-fill" style="width:${barPct}%;background:${barColor}"></div></div>
+        <div class="ic-acts">
+          <button class="btn btn-u btn-xs" onclick="openTxnModal('${it.id}','used')">−Use</button>
+          <button class="btn btn-b btn-xs" onclick="openTxnModal('${it.id}','purchased')">+Buy</button>
+        </div>
+        <div class="ic-menu">
+          <button class="ib" onclick="openEditItem('${it.id}')" title="Edit" style="width:24px;height:24px;font-size:.75rem">&#9998;</button>
+        </div>
+      </div>`;
+    }).join('')+'</div>';
+    return;
+  }
+
+  // Table view
+  cardsEl.style.display='none';tblWrap.style.display='block';cardWrap.style.display='block';
+  const body=document.getElementById('inv-body');
+  if(!arr.length){body.innerHTML=`<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--t3);font-size:.84rem">No items match your search.</td></tr>`;return;}
+  body.innerHTML='';
+  arr.forEach(it=>{
+    const qty=it.quantity??0,wa=it.warnAt??3,ba=it.buyAt??1;
+    const isc=qty<=ba,isw=qty<=wa&&!isc;
+    const qc=isc?'crit':isw?'warn':'ok';
+    const tag=isc?'<span class="stag c">Buy</span>':isw?'<span class="stag w">Low</span>':'';
+    const cat=window._cats[it.categoryId];
+    const catHtml=cat
+      ?`<span class="cd" style="background:${cat.color}"></span><span style="font-size:.78rem">${esc(cat.name)}</span>`
+      :`<span style="font-size:.78rem;color:var(--t3)">—</span>`;
+    const stripeColor=cat?cat.color:'transparent';
+    const barPct=wa>0?Math.min(100,Math.round(qty/Math.max(wa*2,qty+1)*100)):100;
+    const barColor=isc?'#ef4444':isw?'#f59e0b':'#22c55e';
+    const src=window._sources[it.sourceId];
+    const srcBadge=src?`<span style="font-size:.65rem;font-weight:600;padding:1px 6px;border-radius:3px;background:var(--surf2);border:1px solid var(--bdr);color:var(--t3);margin-left:4px">${esc(src.name)}</span>`:'';
+    const defBuyer=window._buyers[it.defaultBuyerId];
+    const buyerBadge=defBuyer?`<span style="font-size:.65rem;font-weight:700;padding:1px 6px;border-radius:3px;margin-left:4px;background:${defBuyer.color}20;color:${defBuyer.color};border:1px solid ${defBuyer.color}40">${esc(defBuyer.name)}</span>`:'';
+    const noteHtml=it.notes?`<div class="i-note">${esc(it.notes)}</div>`:'';
+    const tr=document.createElement('tr');
+    tr.setAttribute('data-id',it.id);
+    tr.innerHTML=`
+      <td style="border-left:3px solid ${stripeColor}">
+        <div class="i-name">${esc(it.name)}${srcBadge}${buyerBadge}</div>
+        <div class="i-meta">${esc(it.unit)}</div>
+        ${noteHtml}
+      </td>
+      <td><div style="display:flex;align-items:center;gap:6px">${catHtml}</div></td>
+      <td>
+        <div class="qty-wrap">
+          <span class="qb ${qc}">${qty}</span>${tag}
+          <div class="qty-bar"><div class="qty-bar-fill" style="width:${barPct}%;background:${barColor}"></div></div>
+        </div>
+      </td>
+      <td style="font-size:.73rem;color:var(--t3)">warn ${wa} · buy ${ba}</td>
+      <td><div class="ag">
+        <button class="btn btn-u btn-xs" onclick="openTxnModal('${it.id}','used')">Used</button>
+        <button class="btn btn-b btn-xs" onclick="openTxnModal('${it.id}','purchased')">Buy</button>
+        <button class="btn btn-s btn-xs" onclick="openOvr('${it.id}')">Set</button>
+        <button class="ib" onclick="openEditItem('${it.id}')" title="Edit">&#9998;</button>
+        <button class="ib del" onclick="openDel('${it.id}')" title="Delete">&times;</button>
+      </div></td>`;
+    body.appendChild(tr);
+  });
+}
+
+function renderCatPills(cats){
+  const el=document.getElementById('cat-pills');
+  el.innerHTML='';
+  const mk=(label,val,color)=>{
+    const b=document.createElement('button');
+    b.className='cp'+(_catFilter===val?' active':'');
+    if(_catFilter===val)b.style.background=color||'#3b82f6';
+    b.textContent=label;
+    b.onclick=()=>{_catFilter=val;renderCatPills(window._cats);renderItems(window._items);};
+    el.appendChild(b);
+  };
+  mk('All','all','#3b82f6');
+  Object.values(cats).forEach(c=>mk(c.name,c.id,c.color));
+  mk('Uncategorized','none','#6b7280');
+}
+
+/* ── Thresholds ── */
+function renderThresholds(items){
+  const el=document.getElementById('thr-list');
+  const empty=document.getElementById('thr-empty');
+  const keys=Object.keys(items);
+  if(!keys.length){empty.style.display='block';el.innerHTML='';return;}
+  empty.style.display='none';
+  el.innerHTML='';
+  keys.forEach(id=>{
+    const it=items[id];
+    const r=document.createElement('div');r.className='tr-row';
+    r.innerHTML=`<span class="tr-name">${esc(it.name)} <span style="color:var(--t3);font-weight:400">${esc(it.unit)}</span></span>
+      <span class="tr-lbl">Warn</span>
+      <input class="tr-in" type="number" min="0" value="${it.warnAt??3}" onchange="updateThr('${id}','warnAt',this.value)" />
+      <span class="tr-lbl">Buy</span>
+      <input class="tr-in" type="number" min="0" value="${it.buyAt??1}" onchange="updateThr('${id}','buyAt',this.value)" />`;
+    el.appendChild(r);
+  });
+}
+
+/* ── Categories ── */
+function renderCats(cats){
+  const el=document.getElementById('cat-list');
+  const empty=document.getElementById('cat-empty');
+  const keys=Object.keys(cats);
+  if(!keys.length){empty.style.display='block';el.innerHTML='';return;}
+  empty.style.display='none';el.innerHTML='';
+  keys.forEach(id=>{
+    const c=cats[id];
+    const cnt=Object.values(window._items).filter(i=>i.categoryId===id).length;
+    const r=document.createElement('div');r.className='cat-row';
+    r.innerHTML=`<div class="cat-swatch" style="background:${c.color}"></div>
+      <span style="flex:1;font-size:.86rem;font-weight:500">${esc(c.name)}</span>
+      <span style="font-size:.73rem;color:var(--t3)">${cnt} item${cnt!==1?'s':''}</span>
+      <button class="ib del btn-xs" onclick="deleteCat('${id}')">&times;</button>`;
+    el.appendChild(r);
+  });
+}
+
+/* ── Logs ── */
+function renderLogs(logs){
+  const el=document.getElementById('log-list');
+  const empty=document.getElementById('log-empty');
+  if(!logs.length){empty.style.display='block';el.innerHTML='';return;}
+  empty.style.display='none';
+  // Group by transactionId
+  const groups={};
+  logs.forEach(l=>{
+    const k=l.transactionId||l.id;
+    if(!groups[k])groups[k]={k,items:[],action:l.action,ts:l.timestamp};
+    groups[k].items.push(l);
+  });
+  const sorted=Object.values(groups).sort((a,b)=>{
+    const ta=a.ts?.toDate?a.ts.toDate():new Date(0);
+    const tb=b.ts?.toDate?b.ts.toDate():new Date(0);
+    return tb-ta;
+  });
+  el.innerHTML='';
+  const icons={used:'−',purchased:'+',override:'≡'};
+  const labels={used:'Used',purchased:'Purchased',override:'Set'};
+  sorted.forEach(g=>{
+    const allUndone=g.items.every(l=>l.undone);
+    const ts=g.ts?.toDate?g.ts.toDate():new Date(0);
+    const timeStr=ts.toLocaleString('default',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    const act=g.action||'used';
+    const icon=icons[act]||'•';
+    const label=labels[act]||act;
+    const itemsHtml=g.items.map(l=>{
+      const sign=act==='used'?'−':act==='purchased'?'+':'→';
+      return `<span style="display:inline-block;margin-right:10px">${esc(l.itemName)}: ${sign}${l.amount} ${esc(l.unit||'')}</span>`;
+    }).join('');
+    const div=document.createElement('div');
+    div.className='le'+(allUndone?' ud':'');
+    div.innerHTML=`<div class="lh">
+      <div class="li ${act}">${icon}</div>
+      <div class="lm">
+        <div class="l-title">${label}${g.items.length>1?` — ${g.items.length} items`:` — ${esc(g.items[0]?.itemName||'')}`}${allUndone?' <span style="font-size:.7rem;font-weight:400;color:var(--t3)">(undone)</span>':''}</div>
+        <div class="l-items">${itemsHtml}</div>
+        <div class="l-time">${timeStr}</div>
+      </div>
+      <div style="display:flex;gap:4px;margin-left:8px;align-self:center;flex-shrink:0">
+        ${!allUndone
+          ?`<button class="btn btn-g btn-xs" onclick="undoTxn('${g.k}')">Undo</button>`
+          :`<button class="btn btn-xs" style="background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.25)" onclick="redoTxn('${g.k}')">Redo</button>`}
+        <button class="ib del" onclick="deleteTxn('${g.k}')" title="Delete entry" style="width:26px;height:26px">&times;</button>
+      </div>
+    </div>`;
+    el.appendChild(div);
+  });
+}
+
+/* ── Modal helpers ── */
+function om(id){document.getElementById(id).classList.add('open');}
+function cm(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.bd').forEach(b=>b.addEventListener('click',e=>{if(e.target===b)b.classList.remove('open');}));
+
+/* ── Add / Edit Item ── */
+function openAddItem(){
+  set('item-m-title','Add Item');
+  document.getElementById('ei-id').value='';
+  document.getElementById('ei-name').value='';
+  document.getElementById('ei-unit').value='';
+  document.getElementById('ei-qty').value='0';
+  document.getElementById('ei-notes').value='';
+  popCatSel('');popSrcSel('');popBuyerSel('');om('m-item');
+}
+function openEditItem(id){
+  const it=window._items[id];if(!it)return;
+  set('item-m-title','Edit Item');
+  document.getElementById('ei-id').value=id;
+  document.getElementById('ei-name').value=it.name;
+  document.getElementById('ei-unit').value=it.unit;
+  document.getElementById('ei-qty').value=it.quantity??0;
+  document.getElementById('ei-notes').value=it.notes||'';
+  popCatSel(it.categoryId||'');popSrcSel(it.sourceId||'');popBuyerSel(it.defaultBuyerId||'');om('m-item');
+}
+function popCatSel(sel){
+  const s=document.getElementById('ei-cat');
+  s.innerHTML='<option value="">Uncategorized</option>';
+  Object.values(window._cats).forEach(c=>{
+    const o=document.createElement('option');
+    o.value=c.id;o.textContent=c.name;if(c.id===sel)o.selected=true;s.appendChild(o);
+  });
+}
+async function saveItem(){
+  const id=document.getElementById('ei-id').value;
+  const name=document.getElementById('ei-name').value.trim();
+  const unit=document.getElementById('ei-unit').value.trim();
+  const qty=parseInt(document.getElementById('ei-qty').value)||0;
+  const catId=document.getElementById('ei-cat').value;
+  const notes=document.getElementById('ei-notes').value.trim();
+  const srcId=document.getElementById('ei-src').value;
+  const defaultBuyerId=document.getElementById('ei-buyer').value;
+  if(!name||!unit){alert('Name and unit are required.');return;}
+  if(!isConn){alert('Connect Firebase first.');return;}
+  // Duplicate check (case-insensitive, skip self when editing)
+  const dup=Object.values(window._items).find(i=>i.name.toLowerCase()===name.toLowerCase()&&i.id!==id);
+  if(dup){alert(`An item called "${dup.name}" already exists.`);return;}
+  if(id){await db.collection('items').doc(id).update({name,unit,quantity:qty,categoryId:catId||'',notes,sourceId:srcId||'',defaultBuyerId:defaultBuyerId||''});}
+  else{await db.collection('items').add({name,unit,quantity:qty,categoryId:catId||'',warnAt:3,buyAt:1,notes,sourceId:srcId||'',defaultBuyerId:defaultBuyerId||'',createdAt:firebase.firestore.FieldValue.serverTimestamp()});}
+  cm('m-item');
+}
+
+/* ── Transaction modal ── */
+function openTxnModal(preId,action){
+  _txnAction=action||'used';_txnRows=[{itemId:preId||'',amount:1}];
+  updTA();renderTRows();om('m-txn');
+}
+function setTA(a,btn){_txnAction=a;updTA();}
+function updTA(){
+  const u=document.getElementById('t-used'),p=document.getElementById('t-purch');
+  u.className=_txnAction==='used'?'active used':'';
+  p.className=_txnAction==='purchased'?'active purchased':'';
+  document.getElementById('txn-btn').textContent=_txnAction==='used'?'Confirm Used':'Confirm Purchase';
+}
+function addTRow(){_txnRows.push({itemId:'',amount:1});renderTRows();}
+function rmTRow(i){_txnRows.splice(i,1);renderTRows();}
+function renderTRows(){
+  const el=document.getElementById('txn-rows');el.innerHTML='';
+  _txnRows.forEach((r,i)=>{
+    const d=document.createElement('div');d.className='txn-r';
+    d.innerHTML=`
+      <select onchange="_txnRows[${i}].itemId=this.value">
+        <option value="">Select item...</option>
+        ${Object.values(window._items).map(it=>`<option value="${it.id}"${it.id===r.itemId?' selected':''}>${esc(it.name)} (${esc(it.unit)})</option>`).join('')}
+      </select>
+      <input type="number" min="1" value="${r.amount}" onchange="_txnRows[${i}].amount=parseInt(this.value)||1" />
+      <button class="rm" onclick="rmTRow(${i})" ${_txnRows.length===1?'style="opacity:.25;pointer-events:none"':''}>&times;</button>`;
+    el.appendChild(d);
+  });
+}
+async function confirmTxn(){
+  const valid=_txnRows.filter(r=>r.itemId);
+  if(!valid.length){alert('Select at least one item.');return;}
+  if(!isConn){alert('Connect Firebase first.');return;}
+  const txnId='txn_'+Date.now();
+  const batch=db.batch();
+  for(const r of valid){
+    const it=window._items[r.itemId];if(!it)continue;
+    const prev=it.quantity??0;
+    const newQ=_txnAction==='used'?Math.max(0,prev-r.amount):prev+r.amount;
+    batch.update(db.collection('items').doc(r.itemId),{quantity:newQ});
+    batch.set(db.collection('logs').doc(),{
+      transactionId:txnId,itemId:r.itemId,itemName:it.name,unit:it.unit,
+      action:_txnAction,amount:r.amount,previousQuantity:prev,newQuantity:newQ,
+      undone:false,timestamp:firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
+  await batch.commit();cm('m-txn');
+}
+
+/* ── Override ── */
+function openOvr(id){
+  const it=window._items[id];if(!it)return;
+  document.getElementById('ovr-id').value=id;
+  document.getElementById('ovr-sub').textContent=`${it.name} — currently ${it.quantity??0} ${it.unit}`;
+  document.getElementById('ovr-unit').textContent=it.unit;
+  document.getElementById('ovr-qty').value=it.quantity??0;
+  om('m-ovr');
+}
+async function confirmOvr(){
+  const id=document.getElementById('ovr-id').value;
+  const nq=parseInt(document.getElementById('ovr-qty').value)||0;
+  const it=window._items[id];if(!it||!isConn)return;
+  const prev=it.quantity??0;
+  const txnId='txn_'+Date.now();
+  const batch=db.batch();
+  batch.update(db.collection('items').doc(id),{quantity:nq});
+  batch.set(db.collection('logs').doc(),{transactionId:txnId,itemId:id,itemName:it.name,unit:it.unit,action:'override',amount:Math.abs(nq-prev),previousQuantity:prev,newQuantity:nq,undone:false,timestamp:firebase.firestore.FieldValue.serverTimestamp()});
+  await batch.commit();cm('m-ovr');
+}
+
+/* ── Delete ── */
+function openDel(id){
+  const it=window._items[id];if(!it)return;
+  document.getElementById('del-id').value=id;
+  document.getElementById('del-sub').textContent=`Delete "${it.name}"? This cannot be undone.`;
+  om('m-del');
+}
+async function confirmDel(){
+  const id=document.getElementById('del-id').value;
+  if(!isConn)return;
+  await db.collection('items').doc(id).delete();cm('m-del');
+}
+
+/* ── Undo ── */
+async function undoTxn(key){
+  if(!isConn)return;
+  const batch=db.batch();
+  if(key.startsWith('txn_')){
+    const snap=await db.collection('logs').where('transactionId','==',key).get();
+    snap.forEach(doc=>{
+      const l=doc.data();
+      if(l.itemId&&window._items[l.itemId]!==undefined)batch.update(db.collection('items').doc(l.itemId),{quantity:l.previousQuantity});
+      batch.update(doc.ref,{undone:true});
+    });
+  }else{
+    const doc=await db.collection('logs').doc(key).get();
+    if(doc.exists){const l=doc.data();if(l.itemId)batch.update(db.collection('items').doc(l.itemId),{quantity:l.previousQuantity});batch.update(doc.ref,{undone:true});}
+  }
+  await batch.commit();
+}
+
+/* ── Redo (re-apply undone transaction) ── */
+async function redoTxn(key){
+  if(!isConn)return;
+  const batch=db.batch();
+  let docs=[];
+  if(key.startsWith('txn_')){
+    const snap=await db.collection('logs').where('transactionId','==',key).get();
+    snap.forEach(d=>docs.push(d));
+  }else{
+    const d=await db.collection('logs').doc(key).get();if(d.exists)docs.push(d);
+  }
+  docs.forEach(doc=>{
+    const l=doc.data();
+    // Re-apply: set quantity to newQuantity
+    if(l.itemId&&window._items[l.itemId]!==undefined)
+      batch.update(db.collection('items').doc(l.itemId),{quantity:l.newQuantity});
+    batch.update(doc.ref,{undone:false});
+  });
+  await batch.commit();
+}
+
+/* ── Stock drill-down modal ── */
+function openStockModal(type){
+  const isCrit=type==='crit';
+  const list=isCrit?(window._critItems||[]):(window._lowItems||[]);
+  document.getElementById('stock-m-title').textContent=isCrit?'Critical — Need to Restock':'Low Stock Items';
+  const el=document.getElementById('stock-m-list');
+  if(!list.length){el.innerHTML='<div class="empty" style="padding:1.5rem"><div class="e-ttl">All clear!</div></div>';om('m-stock');return;}
+  el.innerHTML=list.map(it=>{
+    const qty=it.quantity??0;
+    const cat=window._cats[it.categoryId];
+    const stripe=cat?`border-left:3px solid ${cat.color}`:'border-left:3px solid transparent';
+    const qc=qty<=(it.buyAt??1)?'crit':'warn';
+    return `<div class="sdm-row" style="${stripe}">
+      <div class="sdm-name">${esc(it.name)}<div style="font-size:.7rem;color:var(--t3)">${esc(it.unit)}${it.notes?` · ${esc(it.notes)}`:''}</div></div>
+      <span class="qb ${qc}">${qty}</span>
+      <button class="btn btn-b btn-xs" onclick="cm('m-stock');openTxnModal('${it.id}','purchased')">Buy</button>
+    </div>`;
+  }).join('');
+  om('m-stock');
+}
+
+/* ── Shopping List ── */
+function renderShoppingList(){
+  const el=document.getElementById('sl-list');
+  const empty=document.getElementById('sl-empty');
+  const bar=document.getElementById('sl-buyer-bar');
+  if(!el)return;
+
+  // Build filter bar
+  if(bar){
+    const buyers=Object.values(window._buyers);
+    bar.innerHTML=[
+      `<button class="sl-filter-btn${_slBuyerFilter==='all'?' active':''}" style="${_slBuyerFilter==='all'?'background:#3b82f6':''}" onclick="_slBuyerFilter='all';renderShoppingList()">All</button>`,
+      `<button class="sl-filter-btn${_slBuyerFilter==='none'?' active':''}" style="${_slBuyerFilter==='none'?'background:#6b7280':''}" onclick="_slBuyerFilter='none';renderShoppingList()">Unassigned</button>`,
+      ...buyers.map(b=>`<button class="sl-filter-btn${_slBuyerFilter===b.id?' active':''}" style="${_slBuyerFilter===b.id?`background:${b.color}`:''}" onclick="_slBuyerFilter='${b.id}';renderShoppingList()">${esc(b.name)}</button>`)
+    ].join('');
+    bar.style.display=buyers.length?'flex':'none';
+  }
+
+  let items=Object.values(window._items).filter(i=>(i.quantity??0)<=(i.warnAt??3));
+  // Effective buyer = manual assignment OR default buyer on the item
+  const effectiveBuyer=i=>i.assignedBuyer||i.defaultBuyerId||'';
+  // Apply buyer filter
+  if(_slBuyerFilter==='none') items=items.filter(i=>!effectiveBuyer(i));
+  else if(_slBuyerFilter!=='all') items=items.filter(i=>effectiveBuyer(i)===_slBuyerFilter);
+  // Sort: critical first, then by buyer name, then alpha
+  items.sort((a,b)=>{
+    const sa=((a.quantity??0)<=(a.buyAt??1))?0:1;
+    const sb=((b.quantity??0)<=(b.buyAt??1))?0:1;
+    const ba=window._buyers[effectiveBuyer(a)]?.name||'zzz';
+    const bb=window._buyers[effectiveBuyer(b)]?.name||'zzz';
+    return sa-sb||ba.localeCompare(bb)||a.name.localeCompare(b.name);
+  });
+
+  if(!items.length){
+    empty.style.display='block';el.innerHTML='';
+    if(bar&&_slBuyerFilter!=='all')empty.querySelector('.e-ttl').textContent='Nothing here';
+    return;
+  }
+  empty.style.display='none';
+  const buyers=Object.values(window._buyers);
+
+  el.innerHTML=items.map(it=>{
+    const qty=it.quantity??0,ba=it.buyAt??1;
+    const isCrit=qty<=ba;
+    const done=_cartDone.has(it.id);
+    const cat=window._cats[it.categoryId];
+    const stripe=cat?`border-left:3px solid ${cat.color}`:'';
+    const assignedBuyer=window._buyers[it.assignedBuyer]||window._buyers[it.defaultBuyerId];
+    const isDefault=!it.assignedBuyer&&!!it.defaultBuyerId;
+
+    // Buyer assignment dropdown
+    const buyerHtml=buyers.length?`
+      <div style="position:relative;display:inline-block">
+        <button class="buyer-pill ${assignedBuyer?'':'unassigned'}" style="${assignedBuyer?`background:${assignedBuyer.color}20;color:${assignedBuyer.color};border:1.5px solid ${assignedBuyer.color}40`:''}" onclick="toggleBuyerMenu('${it.id}')">
+          ${assignedBuyer?`<span class="buyer-avatar" style="background:${assignedBuyer.color}">${esc(assignedBuyer.name[0])}</span>${esc(assignedBuyer.name)}${isDefault?'<span style="font-size:.6rem;opacity:.6;margin-left:2px">auto</span>':''}`:'Assign →'}
+        </button>
+        <div id="bm-${it.id}" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:var(--surf);border:1px solid var(--bdr);border-radius:8px;box-shadow:var(--shadow);z-index:50;min-width:130px;overflow:hidden">
+          ${buyers.map(b=>`<button onclick="assignBuyer('${it.id}','${b.id}')" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:none;background:none;cursor:pointer;font-family:inherit;font-size:.82rem;font-weight:600;color:var(--t1);text-align:left" onmouseover="this.style.background='var(--surf2)'" onmouseout="this.style.background='none'"><span class="buyer-avatar" style="background:${b.color}">${esc(b.name[0])}</span>${esc(b.name)}</button>`).join('')}
+          ${assignedBuyer?`<button onclick="assignBuyer('${it.id}','')" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:none;border-top:1px solid var(--bdr);background:none;cursor:pointer;font-family:inherit;font-size:.78rem;color:var(--t3);text-align:left" onmouseover="this.style.background='var(--surf2)'" onmouseout="this.style.background='none'">✕ Unassign</button>`:''}
+        </div>
+      </div>`:'';
+
+    return `<div class="sl-item" style="${stripe}${done?';opacity:.45':''}">
+      <div class="sl-check${done?' done':''}" onclick="toggleCart('${it.id}')">${done?'✓':''}</div>
+      <div class="sl-info">
+        <div class="sl-name">${esc(it.name)}</div>
+        <div class="sl-meta">${esc(it.unit)}${it.notes?` · ${esc(it.notes)}`:''}${window._sources[it.sourceId]?` · <strong>${esc(window._sources[it.sourceId].name)}</strong>`:''}</div>
+      </div>
+      ${buyerHtml}
+      <span class="sl-stock ${isCrit?'crit':'warn'}">${qty} left</span>
+      <button class="btn btn-b btn-xs" onclick="openTxnModal('${it.id}','purchased')">Buy</button>
+    </div>`;
+  }).join('');
+}
+
+function toggleBuyerMenu(itemId){
+  // Close all other open menus first
+  document.querySelectorAll('[id^="bm-"]').forEach(m=>{if(m.id!=='bm-'+itemId)m.style.display='none';});
+  const m=document.getElementById('bm-'+itemId);
+  if(m)m.style.display=m.style.display==='none'?'block':'none';
+}
+// Close buyer menus on outside click
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.buyer-pill')&&!e.target.closest('[id^="bm-"]'))
+    document.querySelectorAll('[id^="bm-"]').forEach(m=>m.style.display='none');
+});
+
+async function assignBuyer(itemId,buyerId){
+  if(!isConn)return;
+  await db.collection('items').doc(itemId).update({assignedBuyer:buyerId});
+  document.querySelectorAll('[id^="bm-"]').forEach(m=>m.style.display='none');
+}
+
+function toggleCart(id){
+  if(_cartDone.has(id))_cartDone.delete(id);else _cartDone.add(id);
+  renderShoppingList();
+}
+
+/* ── Quick Log ── */
+function renderQuickLog(){
+  const el=document.getElementById('quick-log');if(!el)return;
+  // Top items by total usage across all time
+  const by={};
+  window._logs.filter(l=>l.action==='used'&&!l.undone).forEach(l=>{
+    if(!by[l.itemId])by[l.itemId]={id:l.itemId,name:l.itemName,unit:l.unit,n:0};
+    by[l.itemId].n+=(l.amount||0);
+  });
+  const top=Object.values(by).sort((a,b)=>b.n-a.n).slice(0,8);
+  if(!top.length){
+    el.innerHTML='<div class="empty"><div class="e-ttl">No usage history yet</div><div class="e-sub">Log some items and your top picks will appear here.</div></div>';
+    return;
+  }
+  el.innerHTML='<div class="ql-wrap">'+top.map(it=>{
+    const item=window._items[it.id];
+    const qty=item?(item.quantity??0):0;
+    const cat=item?window._cats[item.categoryId]:null;
+    const c=cat?cat.color:'#3b82f6';
+    return `<div class="ql-card" style="border-top:3px solid ${c}">
+      <div class="ql-name">${esc(it.name)}</div>
+      <div class="ql-qty" style="color:${c}">${qty} <span style="font-size:.7rem;font-weight:500;color:var(--t3)">${esc(it.unit||'')}</span></div>
+      <div class="ql-acts">
+        <button class="ql-use" onclick="quickLog('${it.id}','used')">−1 Used</button>
+        <button class="ql-add" onclick="quickLog('${it.id}','purchased')">+1 Buy</button>
+      </div>
+    </div>`;
+  }).join('')+'</div>';
+}
+async function quickLog(id,action){
+  const it=window._items[id];if(!it||!isConn)return;
+  const prev=it.quantity??0;
+  const newQ=action==='used'?Math.max(0,prev-1):prev+1;
+  const txnId='txn_'+Date.now();
+  const batch=db.batch();
+  batch.update(db.collection('items').doc(id),{quantity:newQ});
+  batch.set(db.collection('logs').doc(),{transactionId:txnId,itemId:id,itemName:it.name,unit:it.unit,action,amount:1,previousQuantity:prev,newQuantity:newQ,undone:false,timestamp:firebase.firestore.FieldValue.serverTimestamp()});
+  await batch.commit();
+}
+
+/* ── Import backup ── */
+async function importBackup(input){
+  const file=input.files[0];if(!file)return;
+  if(!isConn){alert('Connect Firebase first.');return;}
+  const text=await file.text();
+  let data;try{data=JSON.parse(text);}catch{alert('Invalid JSON file.');return;}
+  if(!confirm(`Import ${(data.items||[]).length} items, ${(data.categories||[]).length} categories, ${(data.logs||[]).length} log entries?\n\nExisting data will NOT be deleted — imported data will be added alongside it.`))return;
+  const batch=db.batch();
+  const ts=firebase.firestore.FieldValue.serverTimestamp();
+  (data.categories||[]).forEach(c=>{const{id,...d}=c;d.createdAt=ts;batch.set(db.collection('categories').doc(id),d,{merge:true});});
+  (data.items||[]).forEach(i=>{const{id,...d}=i;d.createdAt=ts;batch.set(db.collection('items').doc(id),d,{merge:true});});
+  (data.logs||[]).forEach(l=>{const{id,...d}=l;if(d.timestamp)d.timestamp=new Date(d.timestamp);batch.set(db.collection('logs').doc(id),d,{merge:true});});
+  await batch.commit();
+  alert('Import complete!');
+  input.value='';
+}
+
+/* ── Delete log entry (and adjust quantities) ── */
+async function deleteTxn(key){
+  if(!isConn)return;
+  if(!confirm('Delete this entry? Quantities will be adjusted to reflect the removal.'))return;
+  // Fetch all log docs for this transaction
+  let docs=[];
+  if(key.startsWith('txn_')){
+    const snap=await db.collection('logs').where('transactionId','==',key).get();
+    snap.forEach(d=>docs.push(d));
+  }else{
+    const d=await db.collection('logs').doc(key).get();
+    if(d.exists)docs.push(d);
+  }
+  // Compute qty adjustments for non-undone entries only
+  const adj={};
+  docs.forEach(d=>{
+    const l=d.data();
+    if(l.undone||!l.itemId)return;
+    if(!adj[l.itemId])adj[l.itemId]=0;
+    if(l.action==='used')adj[l.itemId]+=(l.amount||0);       // give back used units
+    else if(l.action==='purchased')adj[l.itemId]-=(l.amount||0); // remove purchased units
+    // override: no automatic qty change (ambiguous to reverse)
+  });
+  const batch=db.batch();
+  for(const[itemId,delta]of Object.entries(adj)){
+    const item=window._items[itemId];if(!item)continue;
+    const newQ=Math.max(0,(item.quantity??0)+delta);
+    batch.update(db.collection('items').doc(itemId),{quantity:newQ});
+  }
+  docs.forEach(d=>batch.delete(d.ref));
+  await batch.commit();
+}
+
+/* ── Export backup ── */
+async function exportBackup(){
+  if(!isConn){alert('Connect Firebase first.');return;}
+  const[is,cs,ls]=await Promise.all([
+    db.collection('items').get(),
+    db.collection('categories').get(),
+    db.collection('logs').get()
+  ]);
+  const toObj=snap=>{const a=[];snap.forEach(d=>{const o={id:d.id,...d.data()};
+    // Convert Timestamps to ISO strings
+    for(const k of Object.keys(o)){if(o[k]?.toDate)o[k]=o[k].toDate().toISOString();}
+    a.push(o);});return a;};
+  const data={exportedAt:new Date().toISOString(),items:toObj(is),categories:toObj(cs),logs:toObj(ls)};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`home-inventory-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ── Clear log ── */
+async function clearLog(){
+  if(!confirm('Clear all log entries?')||!isConn)return;
+  const snap=await db.collection('logs').get();
+  const batch=db.batch();snap.forEach(d=>batch.delete(d.ref));
+  await batch.commit();
+}
+
+/* ── Threshold update ── */
+async function updateThr(id,field,val){
+  if(!isConn)return;
+  await db.collection('items').doc(id).update({[field]:parseInt(val)||0});
+}
+
+/* ── Buyers (Settings) ── */
+function renderBuyerSettings(buyers){
+  const el=document.getElementById('buyer-list');
+  const empty=document.getElementById('buyer-empty');
+  if(!el)return;
+  const keys=Object.keys(buyers||window._buyers);
+  if(!keys.length){empty.style.display='block';el.innerHTML='';return;}
+  empty.style.display='none';el.innerHTML='';
+  keys.forEach(id=>{
+    const b=(buyers||window._buyers)[id];
+    const r=document.createElement('div');r.className='cat-row';
+    r.innerHTML=`<div class="cat-swatch" style="background:${b.color}"></div>
+      <span style="flex:1;font-size:.86rem;font-weight:600">${esc(b.name)}</span>
+      <button class="ib del btn-xs" onclick="deleteBuyer('${id}')">&times;</button>`;
+    el.appendChild(r);
+  });
+}
+function openAddBuyer(){
+  document.getElementById('buyer-nm').value='';
+  _selBuyerColor=CAT_COLORS[0];renderBuyerColPick();om('m-buyer');
+}
+function renderBuyerColPick(){
+  document.getElementById('buyer-col-pick').innerHTML=CAT_COLORS.map(c=>`
+    <div class="col-swatch${c===_selBuyerColor?' sel':''}" style="background:${c}" onclick="_selBuyerColor='${c}';renderBuyerColPick()"></div>`).join('');
+}
+async function saveBuyer(){
+  const name=document.getElementById('buyer-nm').value.trim();
+  if(!name){alert('Enter a name.');return;}
+  if(!isConn){alert('Connect Firebase first.');return;}
+  const dup=Object.values(window._buyers).find(b=>b.name.toLowerCase()===name.toLowerCase());
+  if(dup){alert(`"${dup.name}" already exists.`);return;}
+  await db.collection('buyers').add({name,color:_selBuyerColor,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  cm('m-buyer');
+}
+async function deleteBuyer(id){
+  if(!confirm('Remove this buyer? Items assigned to them will become unassigned.')||!isConn)return;
+  // Unassign all items with this buyer
+  const snap=await db.collection('items').where('assignedBuyer','==',id).get();
+  const batch=db.batch();
+  snap.forEach(d=>batch.update(d.ref,{assignedBuyer:''}));
+  batch.delete(db.collection('buyers').doc(id));
+  await batch.commit();
+}
+
+/* ── Sources (Settings) ── */
+function renderSourceSettings(sources){
+  const el=document.getElementById('src-list');
+  const empty=document.getElementById('src-empty');
+  if(!el)return;
+  const keys=Object.keys(sources||window._sources);
+  if(!keys.length){empty.style.display='block';el.innerHTML='';return;}
+  empty.style.display='none';el.innerHTML='';
+  keys.forEach(id=>{
+    const s=(sources||window._sources)[id];
+    const cnt=Object.values(window._items).filter(i=>i.sourceId===id).length;
+    const r=document.createElement('div');r.className='cat-row';
+    r.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2" style="width:13px;height:13px;flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span style="flex:1;font-size:.86rem;font-weight:600">${esc(s.name)}</span>
+      <span style="font-size:.73rem;color:var(--t3)">${cnt} item${cnt!==1?'s':''}</span>
+      <button class="ib del btn-xs" onclick="deleteSource('${id}')">&times;</button>`;
+    el.appendChild(r);
+  });
+}
+function openAddSource(){
+  document.getElementById('src-nm').value='';om('m-src');
+}
+async function saveSource(){
+  const name=document.getElementById('src-nm').value.trim();
+  if(!name){alert('Enter a source name.');return;}
+  if(!isConn){alert('Connect Firebase first.');return;}
+  const dup=Object.values(window._sources).find(s=>s.name.toLowerCase()===name.toLowerCase());
+  if(dup){alert(`"${dup.name}" already exists.`);return;}
+  await db.collection('sources').add({name,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  cm('m-src');
+}
+async function deleteSource(id){
+  if(!confirm('Remove this source? Items using it will become unsourced.')||!isConn)return;
+  const snap=await db.collection('items').where('sourceId','==',id).get();
+  const batch=db.batch();
+  snap.forEach(d=>batch.update(d.ref,{sourceId:''}));
+  batch.delete(db.collection('sources').doc(id));
+  await batch.commit();
+}
+
+/* ── Buyer dropdown helper (for item modal) ── */
+function popBuyerSel(sel){
+  const s=document.getElementById('ei-buyer');if(!s)return;
+  s.innerHTML='<option value="">— None —</option>';
+  Object.values(window._buyers).forEach(b=>{
+    const o=document.createElement('option');
+    o.value=b.id;o.textContent=b.name;if(b.id===sel)o.selected=true;s.appendChild(o);
+  });
+}
+
+/* ── Source dropdown helper ── */
+function popSrcSel(sel){
+  const s=document.getElementById('ei-src');if(!s)return;
+  s.innerHTML='<option value="">— None —</option>';
+  Object.values(window._sources).forEach(src=>{
+    const o=document.createElement('option');
+    o.value=src.id;o.textContent=src.name;if(src.id===sel)o.selected=true;s.appendChild(o);
+  });
+}
+
+/* ── Inline source creation (inside Add Item modal) ── */
+function toggleInlineSrc(){
+  const el=document.getElementById('inline-src');
+  const open=el.style.display==='none';
+  el.style.display=open?'block':'none';
+  if(open)setTimeout(()=>document.getElementById('is-name').focus(),50);
+}
+async function saveInlineSrc(){
+  const name=document.getElementById('is-name').value.trim();
+  if(!name){alert('Enter a source name.');return;}
+  if(!isConn){alert('Connect Firebase first.');return;}
+  const dup=Object.values(window._sources).find(s=>s.name.toLowerCase()===name.toLowerCase());
+  if(dup){alert(`"${dup.name}" already exists.`);return;}
+  const ref=await db.collection('sources').add({name,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  const opt=document.createElement('option');
+  opt.value=ref.id;opt.textContent=name;opt.selected=true;
+  document.getElementById('ei-src').appendChild(opt);
+  toggleInlineSrc();
+}
+
+/* ── Inline category creation (inside Add Item modal) ── */
+let _icColor=CAT_COLORS[0];
+function toggleInlineCat(){
+  const el=document.getElementById('inline-cat');
+  const open=el.style.display==='none';
+  el.style.display=open?'block':'none';
+  if(open){
+    document.getElementById('ic-name').value='';
+    _icColor=CAT_COLORS[0];
+    renderIcColPick();
+    setTimeout(()=>document.getElementById('ic-name').focus(),50);
+  }
+}
+function renderIcColPick(){
+  document.getElementById('ic-col-pick').innerHTML=CAT_COLORS.map(c=>`
+    <div class="col-swatch${c===_icColor?' sel':''}" style="background:${c}" onclick="_icColor='${c}';renderIcColPick()"></div>`).join('');
+}
+async function saveInlineCat(){
+  const name=document.getElementById('ic-name').value.trim();
+  if(!name){alert('Enter a category name.');return;}
+  if(!isConn){alert('Connect Firebase first.');return;}
+  const dup=Object.values(window._cats).find(c=>c.name.toLowerCase()===name.toLowerCase());
+  if(dup){alert(`"${dup.name}" already exists.`);return;}
+  const ref=await db.collection('categories').add({name,color:_icColor,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  // Auto-select the new category in the dropdown
+  const opt=document.createElement('option');
+  opt.value=ref.id;opt.textContent=name;opt.selected=true;
+  document.getElementById('ei-cat').appendChild(opt);
+  toggleInlineCat();
+}
+
+/* ── Category modal ── */
+function openAddCat(){
+  document.getElementById('cat-nm').value='';
+  _selColor=CAT_COLORS[0];renderColPick();om('m-cat');
+}
+function renderColPick(){
+  document.getElementById('col-pick').innerHTML=CAT_COLORS.map(c=>`
+    <div class="col-swatch${c===_selColor?' sel':''}" style="background:${c}" onclick="pickCol('${c}')"></div>`).join('');
+}
+function pickCol(c){_selColor=c;renderColPick();}
+async function saveCat(){
+  const name=document.getElementById('cat-nm').value.trim();
+  if(!name){alert('Enter a category name.');return;}
+  if(!isConn){alert('Connect Firebase first.');return;}
+  const dup=Object.values(window._cats).find(c=>c.name.toLowerCase()===name.toLowerCase());
+  if(dup){alert(`A category called "${dup.name}" already exists.`);return;}
+  await db.collection('categories').add({name,color:_selColor,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  cm('m-cat');
+}
+async function deleteCat(id){
+  if(!confirm('Delete this category? Items will become uncategorised.')||!isConn)return;
+  const snap=await db.collection('items').where('categoryId','==',id).get();
+  const batch=db.batch();
+  snap.forEach(d=>batch.update(d.ref,{categoryId:''}));
+  batch.delete(db.collection('categories').doc(id));
+  await batch.commit();
+}
+
+/* ── Tab nav ── */
+function showTab(name,btn,fromMob){
+  document.querySelectorAll('.tab').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  // sync both sidebar nav and mobile nav
+  document.querySelectorAll('.nb,.mob-nav button').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  // keep the other nav in sync by tab name position
+  const idx={'dashboard':0,'inventory':1,'log':2,'shopping':3,'settings':4}[name];
+  if(fromMob){
+    const sbBtns=document.querySelectorAll('.nb');if(sbBtns[idx])sbBtns[idx].classList.add('active');
+  }else{
+    const mobBtns=document.querySelectorAll('.mob-nav button');if(mobBtns[idx])mobBtns[idx].classList.add('active');
+  }
+}
+
+/* ── Sidebar collapse ── */
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar');
+  const collapsed=sb.classList.toggle('collapsed');
+  localStorage.setItem('sb-collapsed',collapsed?'1':'0');
+}
+// restore on load
+document.addEventListener('DOMContentLoaded',function(){
+  if(localStorage.getItem('sb-collapsed')==='1'){
+    const sb=document.getElementById('sidebar');if(sb)sb.classList.add('collapsed');
+  }
+});
+
+/* ── Theme ── */
+function toggleTheme(){
+  const h=document.documentElement;
+  const t=h.getAttribute('data-theme')==='dark'?'light':'dark';
+  h.setAttribute('data-theme',t);localStorage.setItem('th',t);
+}
+
+/* ── Utils ── */
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function set(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
+function pad(n){return String(n).padStart(2,'0');}
+
+/* ── Boot ── */
+(()=>{
+  const saved=localStorage.getItem('th');
+  if(saved)document.documentElement.setAttribute('data-theme',saved);
+  const h=new Date().getHours();
+  set('greeting',h<12?'Good morning':h<17?'Good afternoon':'Good evening');
+  set('today',new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}));
+  renderUsageChart([]);renderTopUsed([]);renderCatBreakdown({},{});
+})();
+
+init();
+</script>
+</body>
+</html>
