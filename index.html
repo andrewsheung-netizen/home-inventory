@@ -1,0 +1,1670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>A&amp;G — Home Inventory</title>
+<meta name="description" content="Shared home inventory & supplies tracker for the household." />
+<meta name="theme-color" content="#A90E0F" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23F2E3D1'/%3E%3Ccircle cx='16' cy='16' r='12' fill='none' stroke='%232E2624' stroke-width='2'/%3E%3Cpolygon points='16,9.5 22.5,21.5 9.5,21.5' fill='%23A90E0F'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+/* ════════ TOKENS — Bauhaus Gallery (ref: A. Farmazon, dribbble 16488330) ════════ */
+:root{
+  --paper:oklch(0.925 0.026 80);        /* #F2E3D1 cream canvas */
+  --paper2:oklch(0.885 0.03 80);        /* recessed cream — inputs, panels */
+  --ink:oklch(0.265 0.013 55);          /* #2E2624 warm black */
+  --ink2:oklch(0.45 0.032 70);          /* secondary text, ≥4.5:1 on paper */
+  --line:oklch(0.74 0.028 78 / .55);    /* taupe hairline */
+  --act:oklch(0.47 0.185 29);           /* #A90E0F carmine — interactive + buy */
+  --act-d:oklch(0.34 0.135 28);         /* #6A0D0D oxblood — hover, destructive */
+  --ochre:oklch(0.745 0.125 70);        /* #E39948 — running-low */
+  --terra:oklch(0.53 0.145 31);         /* #AF4032 terracotta */
+  --rose:oklch(0.66 0.068 22);          /* #C37C7F dusty rose */
+  --band:oklch(0.265 0.013 55);         /* stat band dark */
+  --field:oklch(0.47 0.185 29);         /* the painted red field behind the canvas */
+  --hover:oklch(0.905 0.028 80);        /* row/list hover wash */
+  --on-ochre:oklch(0.265 0.013 55);     /* text on ochre fills — warm black in BOTH modes */
+  --band-fg:oklch(0.92 0.025 80);       /* stat band foreground — cream in BOTH modes */
+  --r-card:22px; --r-panel:16px; --r-ctl:10px;
+  --ease:cubic-bezier(0.16,1,0.3,1);
+  --hd-h:62px;
+  --shadow-soft:0 2px 6px oklch(0.2 0.05 30 / .08),0 14px 34px -14px oklch(0.2 0.05 30 / .22);
+  --z-nav:30; --z-backdrop:40; --z-dialog:50; --z-toast:60;
+  color-scheme:light;
+}
+/* ── NIGHT — the gallery after hours: espresso canvas on a deep oxblood field ── */
+html.dark{
+  --paper:oklch(0.225 0.013 55);
+  --paper2:oklch(0.272 0.016 55);
+  --ink:oklch(0.90 0.022 80);
+  --ink2:oklch(0.67 0.027 75);
+  --line:oklch(0.90 0.022 80 / .13);
+  --act:oklch(0.64 0.155 32);           /* carmine lifts to terracotta for dark-ground contrast */
+  --act-d:oklch(0.72 0.125 33);
+  --terra:oklch(0.58 0.14 31);
+  --band:oklch(0.305 0.016 55);
+  --hover:oklch(0.262 0.015 55);
+  --field:oklch(0.295 0.112 28);
+  color-scheme:dark;
+}
+html.dark body::before{
+  background:
+    radial-gradient(1000px 640px at 88% -2%, oklch(0.42 0.13 30 / .38), transparent 62%),
+    radial-gradient(820px 560px at -2% 102%, oklch(0.19 0.085 28 / .8), transparent 60%),
+    radial-gradient(640px 420px at 32% 42%, oklch(0.34 0.125 28 / .45), transparent 65%);
+}
+html.dark select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23E8DCC8' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+html.dark .btn-danger:hover{background:oklch(0.79 0.115 33);border-color:oklch(0.79 0.115 33);color:var(--paper)}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  color:var(--ink);
+  font-size:16px;line-height:1.45;min-height:100vh;
+  padding:22px 14px;
+  background:var(--field);
+}
+/* the painted washes — a fixed layer that drifts almost imperceptibly */
+body::before{
+  content:'';position:fixed;inset:-9%;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(1000px 640px at 88% -2%, oklch(0.53 0.145 31 / .5), transparent 62%),
+    radial-gradient(820px 560px at -2% 102%, oklch(0.34 0.135 28 / .65), transparent 60%),
+    radial-gradient(640px 420px at 32% 42%, oklch(0.5 0.19 28 / .4), transparent 65%);
+  will-change:transform;
+}
+@media (prefers-reduced-motion: no-preference){
+  body::before{animation:field-drift 52s ease-in-out infinite alternate}
+  @keyframes field-drift{
+    from{transform:translate3d(-1.2%,-0.8%,0) rotate(-0.4deg) scale(1.02)}
+    to{transform:translate3d(1.2%,0.8%,0) rotate(0.4deg) scale(1.06)}
+  }
+}
+/* painterly grain over the field */
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.11;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+}
+.serif{font-family:'Lora',Georgia,serif}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:.95rem;color:var(--ink)}
+[hidden]{display:none!important}
+.num{font-family:'Inter',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+
+:focus-visible{outline:3px solid var(--act);outline-offset:2px}
+
+/* ════════ THE CANVAS (app card on the painted field) ════════ */
+.frame{
+  position:relative;z-index:2;
+  max-width:1180px;margin:0 auto;
+  background:var(--paper);border-radius:var(--r-card);
+  box-shadow:0 40px 90px -32px oklch(0.15 0.06 28 / .55);
+  min-height:calc(100dvh - 44px);
+}
+
+/* ════════ HEADER ════════ */
+header{
+  position:sticky;top:0;z-index:var(--z-nav);
+  background:var(--paper);
+  border-bottom:1px solid var(--line);
+  border-radius:var(--r-card) var(--r-card) 0 0;
+}
+.hd-in{max-width:1120px;margin:0 auto;padding:0 26px;display:flex;align-items:stretch;gap:26px}
+.brand{display:flex;align-items:center;gap:11px;padding:13px 0}
+.brand svg{display:block}
+.brand-name{font-family:'Lora',Georgia,serif;font-size:1.22rem;font-weight:700;letter-spacing:.13em;line-height:1}
+.brand-name em{font-style:italic;color:var(--act);letter-spacing:0;padding:0 1px}
+.brand-disc{transform-origin:17px 19.5px}
+.brand-sub{font-size:.58rem;font-weight:600;letter-spacing:.24em;color:var(--ink2);margin-top:3px;text-transform:uppercase}
+nav.tabs{display:flex;align-items:stretch}
+.tab-btn{
+  display:flex;align-items:center;gap:7px;padding:0 15px;border:none;background:none;
+  font-size:.88rem;font-weight:500;color:var(--ink2);
+  transition:color .15s var(--ease),box-shadow .15s var(--ease);
+}
+.tab-btn:hover{color:var(--ink)}
+.tab-btn[aria-current="page"]{color:var(--act);font-weight:600;box-shadow:inset 0 -2.5px 0 var(--act)}
+.tab-btn .ico{display:none}
+.tab-badge{
+  min-width:18px;height:18px;padding:0 5px;background:var(--act);color:var(--paper);
+  border-radius:999px;
+  font-size:.66rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;
+}
+.hd-right{margin-left:auto;display:flex;align-items:center;gap:14px;padding:13px 0}
+.sync-chip{display:flex;align-items:center;gap:6px;font-size:.6rem;font-weight:600;letter-spacing:.16em;color:var(--ink2);border:none;background:none;padding:4px 2px}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--ink2)}
+.sync-chip.live .sync-dot{background:var(--act)}
+.me-chip{
+  display:flex;align-items:center;gap:8px;border:1.5px solid var(--ink);background:none;
+  border-radius:999px;padding:5px 14px 5px 10px;font-size:.8rem;font-weight:600;
+  transition:background .15s var(--ease),color .15s var(--ease);
+}
+.me-chip:hover{background:var(--ink);color:var(--paper)}
+.mark{display:inline-block;flex:none}
+
+/* ════════ LAYOUT ════════ */
+main{max-width:1120px;margin:0 auto;padding:26px 26px 90px}
+.tabpane{display:none}
+.tabpane.active{display:block}
+.pane-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:20px}
+.pane-title{font-family:'Lora',Georgia,serif;font-size:1.5rem;font-weight:600;letter-spacing:.01em;line-height:1.1}
+.pane-note{font-family:'Lora',Georgia,serif;font-style:italic;font-size:.85rem;color:var(--ink2)}
+/* the line · bisected-circle · line ornament */
+.motif{display:flex;align-items:center;margin-bottom:10px}
+.motif i{width:34px;height:1.5px;background:var(--ink)}
+.motif b{width:13px;height:13px;border-radius:50%;background:linear-gradient(90deg,var(--ink) 50%,var(--ochre) 50%);margin:0 -1px;border:1px solid var(--ink)}
+
+/* ════════ STAT BAND ════════ */
+.band{display:flex;background:var(--band);color:var(--band-fg);margin-bottom:20px;border-radius:var(--r-panel);box-shadow:var(--shadow-soft)}
+.band-cell{
+  flex:1;display:flex;flex-direction:column;gap:3px;align-items:flex-start;
+  padding:15px 20px 13px;border:none;background:none;color:inherit;text-align:left;
+}
+.band-cell+.band-cell{border-left:1px solid oklch(0.95 0.02 80 / .22)}
+.band-cell:first-child{border-radius:var(--r-panel) 0 0 var(--r-panel)}
+.band-cell:last-child{border-radius:0 var(--r-panel) var(--r-panel) 0}
+button.band-cell{transition:background .15s var(--ease)}
+button.band-cell:hover{background:oklch(0.33 0.018 55)}
+button.band-cell:focus-visible{outline-offset:-4px;outline-color:var(--ochre)}
+.band-num{font-family:'Lora',Georgia,serif;font-size:1.75rem;font-weight:700;line-height:1}
+.band-num.sig-low{color:var(--ochre)}
+.band-num.sig-buy{color:oklch(0.67 0.14 33)}
+.band-lbl{font-size:.6rem;font-weight:600;letter-spacing:.2em;color:oklch(0.86 0.025 80 / .75)}
+.band-cell.is-on{background:oklch(0.33 0.018 55);box-shadow:inset 0 -3px 0 0 var(--ochre)}
+
+/* ════════ CONTROLS ════════ */
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px}
+.controls .btn-primary{margin-left:auto}
+.search-wrap{position:relative;flex:1 1 220px;min-width:180px}
+.search-wrap .ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--ink2);pointer-events:none}
+input[type="text"],input[type="search"],input[type="number"],select,textarea{
+  background:var(--paper2);border:1.5px solid transparent;padding:8px 14px;width:100%;
+  border-radius:var(--r-ctl);appearance:none;
+  transition:border-color .15s var(--ease),background .15s var(--ease);
+}
+input::placeholder{color:var(--ink2)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--act);background:var(--paper)}
+.search-wrap input{padding-left:36px}
+select{
+  width:auto;padding-right:32px;cursor:pointer;font-weight:500;font-size:.85rem;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%232E2624' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+}
+.seg{display:flex}
+.seg button{
+  border:1.5px solid var(--ink);background:none;color:var(--ink);
+  padding:7px 15px;font-size:.72rem;font-weight:600;letter-spacing:.1em;
+  transition:background .15s var(--ease),color .15s var(--ease),border-color .15s var(--ease);
+}
+.seg button:first-child{border-radius:999px 0 0 999px;padding-left:18px}
+.seg button:last-child{border-radius:0 999px 999px 0;padding-right:18px}
+.seg button+button{margin-left:-1.5px}
+.seg button:hover{background:var(--hover)}
+.seg button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+#seg-low[aria-pressed="true"]{background:var(--ochre);border-color:var(--ochre);color:var(--on-ochre)}
+#seg-buy[aria-pressed="true"]{background:var(--act);border-color:var(--act);color:var(--paper)}
+
+/* ════════ BUTTONS ════════ */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border:1.5px solid var(--ink);background:none;color:var(--ink);
+  border-radius:999px;padding:8px 20px;
+  font-size:.76rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;
+  transition:background .15s var(--ease),color .15s var(--ease),border-color .15s var(--ease),transform .15s var(--ease);
+}
+.btn:hover{background:var(--ink);color:var(--paper)}
+.btn .ico{width:14px;height:14px}
+.btn-primary{background:var(--act);border-color:var(--act);color:var(--paper);box-shadow:var(--shadow-soft)}
+.btn-primary:hover{background:var(--act-d);border-color:var(--act-d);color:var(--paper)}
+.btn-danger{background:var(--act-d);border-color:var(--act-d);color:var(--paper)}
+.btn-danger:hover{background:oklch(0.27 0.11 28);border-color:oklch(0.27 0.11 28);color:var(--paper)}
+.btn-ghost{border-color:transparent;background:none}
+.btn-ghost:hover{background:var(--paper2);color:var(--ink)}
+.ibtn{
+  width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;
+  border:1.5px solid transparent;border-radius:50%;background:none;color:var(--ink2);
+  transition:border-color .15s var(--ease),color .15s var(--ease),background .15s var(--ease),transform .12s var(--ease);
+}
+.ibtn:hover{border-color:var(--ink);color:var(--ink)}
+.ibtn.danger:hover{border-color:var(--act);color:var(--act)}
+.ibtn .ico{width:15px;height:15px}
+
+/* ════════ INVENTORY LIST ════════ */
+.inv-head,.inv-row{
+  display:grid;align-items:center;gap:16px;
+  grid-template-columns:minmax(0,2fr) 158px 136px 76px 130px 76px;
+  padding:10px 14px;
+}
+.inv-head{
+  background:var(--paper2);border-radius:var(--r-ctl);
+  font-size:.62rem;font-weight:600;letter-spacing:.18em;color:var(--ink2);
+  position:sticky;top:var(--hd-h);z-index:5;
+}
+.inv-row{border-bottom:1px solid var(--line);background:transparent}
+.inv-row:hover{background:var(--hover)}
+.iname{font-weight:600;font-size:.97rem;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.iname .note-glyph{font-size:.7rem;color:var(--rose);vertical-align:2px;cursor:help}
+.imeta{font-size:.72rem;color:var(--ink2);letter-spacing:.03em;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qty-cell{display:flex;align-items:center;gap:8px}
+.qty-val{font-size:1.25rem;font-weight:700;min-width:34px;text-align:right;line-height:1}
+.qty-unit{font-size:.68rem;color:var(--ink2);letter-spacing:.03em;align-self:flex-end;margin-bottom:2px;max-width:46px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stp{display:flex;gap:5px;margin-left:auto}
+.stp button{
+  width:30px;height:30px;border:1.5px solid var(--ink);border-radius:50%;background:none;color:var(--ink);
+  font-size:1rem;font-weight:600;line-height:1;display:flex;align-items:center;justify-content:center;
+  transition:background .12s var(--ease),color .12s var(--ease),transform .12s var(--ease);
+}
+.stp button:hover{background:var(--ink);color:var(--paper)}
+.stp button:disabled{opacity:.3;cursor:default}
+.stp button:disabled:hover{background:none;color:var(--ink)}
+.gauge{display:flex;flex-direction:column;gap:4px}
+.gauge-track{height:6px;border-radius:3px;background:oklch(0.74 0.028 78 / .35);position:relative;overflow:hidden}
+.gauge-fill{position:absolute;inset:0 auto 0 0;border-radius:3px;background:var(--ink);transition:width .3s var(--ease)}
+.gauge-fill.low{background:var(--ochre)}
+.gauge-fill.buy{background:var(--act)}
+.gauge-lbl{font-size:.64rem;color:var(--ink2);letter-spacing:.04em}
+.chip{
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:.6rem;font-weight:700;letter-spacing:.16em;padding:4px 0;width:100%;
+  border:1.5px solid var(--ink);border-radius:999px;background:none;color:var(--ink);
+}
+.chip.low{background:var(--ochre);border-color:var(--ochre);color:var(--on-ochre)}
+.chip.buy{background:var(--act);border-color:var(--act);color:var(--paper)}
+.upd-cell{display:flex;align-items:center;gap:7px;font-size:.74rem;color:var(--ink2);min-width:0}
+.upd-cell span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row-actions{display:flex;justify-content:flex-end}
+@keyframes flash-row{0%{background:oklch(0.745 0.125 70 / .25)}100%{background:transparent}}
+.inv-row.flash{animation:flash-row .8s var(--ease)}
+
+/* ════════ SECTION LABELS ════════ */
+.sect{
+  display:flex;align-items:center;gap:10px;
+  font-size:.68rem;font-weight:700;letter-spacing:.2em;color:var(--ink2);
+  border-bottom:1px solid var(--line);padding-bottom:8px;margin:26px 0 12px;
+}
+.sect .sq{width:10px;height:10px;border-radius:50%;flex:none}
+.sect .count{margin-left:auto;font-family:'Lora',Georgia,serif;font-style:italic;font-weight:500;color:var(--ink2);letter-spacing:.02em;font-size:.78rem;text-transform:none}
+
+/* ════════ SHOPPING ════════ */
+.shop-row{display:flex;align-items:center;gap:14px;padding:11px 14px;border-bottom:1px solid var(--line)}
+.shop-row:hover{background:var(--hover)}
+.shop-name{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shop-meta{font-size:.72rem;color:var(--ink2);letter-spacing:.03em}
+.shop-need{margin-left:auto;display:flex;align-items:center;gap:14px;flex:none}
+.shop-qty{font-size:.95rem;font-weight:700}
+.shop-qty small{font-size:.68rem;font-weight:500;color:var(--ink2);letter-spacing:.03em}
+.checkbox{
+  width:25px;height:25px;border:1.5px solid var(--ink);border-radius:50%;background:none;flex:none;
+  display:inline-flex;align-items:center;justify-content:center;color:transparent;
+  transition:background .15s var(--ease),color .15s var(--ease),transform .12s var(--ease);
+}
+.checkbox:hover{background:var(--paper2)}
+.checkbox[aria-checked="true"]{background:var(--ink);color:var(--paper)}
+.checkbox .ico{width:13px;height:13px}
+.shop-row.done .shop-name{text-decoration:line-through;color:var(--ink2);font-weight:500}
+.manual-add{display:flex;gap:8px;margin-bottom:4px}
+.manual-add input{flex:1}
+
+/* ════════ ACTIVITY ════════ */
+.day-lbl{font-family:'Lora',Georgia,serif;font-style:italic;font-size:.85rem;font-weight:500;color:var(--ink2);margin:22px 0 6px}
+.log-row{display:flex;align-items:flex-start;gap:11px;padding:9px 4px;border-bottom:1px solid var(--line);font-size:.88rem}
+.log-glyph{
+  width:23px;height:23px;flex:none;border:1.5px solid var(--ink);border-radius:50%;color:var(--ink);
+  display:flex;align-items:center;justify-content:center;font-size:.76rem;font-weight:700;margin-top:1px;
+}
+.log-glyph.crit{border-color:var(--act);color:var(--act)}
+.log-glyph.good{border-color:var(--ochre);color:oklch(0.55 0.11 70)}
+.log-body{min-width:0;flex:1}
+.log-who{font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.log-text{color:var(--ink)}
+.log-time{font-size:.7rem;color:var(--ink2);flex:none;margin-top:3px;letter-spacing:.03em}
+
+/* ════════ SETTINGS ════════ */
+.set-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0 48px;max-width:880px}
+.set-block{margin-bottom:30px}
+.set-row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.set-help{font-size:.78rem;color:var(--ink2);margin-top:8px;line-height:1.55}
+.set-help code{font-family:'Inter',monospace;font-size:.7rem;background:var(--paper2);padding:1px 6px;border-radius:5px}
+.cat-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.cat-chip{display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--ink);border-radius:999px;padding:4px 7px 4px 14px;font-size:.78rem;font-weight:600;letter-spacing:.03em}
+.cat-chip button{border:none;background:none;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ink2)}
+.cat-chip button:hover{color:var(--act)}
+.cat-chip button .ico{width:11px;height:11px}
+
+/* ════════ EMPTY STATES ════════ */
+.empty{padding:52px 24px;text-align:center;background:var(--paper2);border-radius:var(--r-panel);margin-top:4px}
+.empty svg{display:block;margin:0 auto 20px}
+.empty h3{font-family:'Lora',Georgia,serif;font-size:1.2rem;font-weight:600;margin-bottom:7px}
+.empty p{font-size:.85rem;color:var(--ink2);max-width:42ch;margin:0 auto 18px;line-height:1.55}
+.empty .btn{margin:0 5px 5px}
+@media (prefers-reduced-motion: no-preference){
+  .empty .f1{animation:drift1 9s ease-in-out infinite alternate}
+  .empty .f2{animation:drift2 12s ease-in-out infinite alternate}
+  .empty .f3{animation:drift3 15s ease-in-out infinite alternate}
+  @keyframes drift1{from{transform:translateY(0)}to{transform:translateY(-4px)}}
+  @keyframes drift2{from{transform:translate(0,0)}to{transform:translate(3px,3px)}}
+  @keyframes drift3{from{transform:rotate(0deg)}to{transform:rotate(4deg)}}
+}
+
+/* ════════ DIALOGS ════════ */
+dialog{
+  border:none;border-radius:var(--r-panel);background:var(--paper);color:var(--ink);padding:0;
+  width:min(480px,calc(100vw - 32px));max-height:calc(100dvh - 48px);
+  margin:auto;z-index:var(--z-dialog);
+  box-shadow:0 30px 80px -20px oklch(0.12 0.05 30 / .6);
+}
+dialog::backdrop{background:oklch(0.22 0.06 28 / .5)}
+.dlg-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 12px;border-bottom:1px solid var(--line)}
+.dlg-title{font-family:'Lora',Georgia,serif;font-size:1.15rem;font-weight:600}
+.dlg-body{padding:18px 22px;overflow-y:auto}
+.dlg-foot{display:flex;justify-content:flex-end;gap:10px;padding:0 22px 20px}
+.dlg-foot .spacer{margin-right:auto}
+.f-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px 12px}
+.f-full{grid-column:1/-1}
+.f-2{grid-column:span 2}
+.f-lbl{display:block;font-size:.62rem;font-weight:600;letter-spacing:.17em;color:var(--ink2);margin-bottom:5px}
+.f-err{display:none;font-size:.74rem;color:var(--act);font-weight:600;margin-top:4px}
+.f-bad input{border-color:var(--act);background:var(--paper)}
+.f-bad .f-err{display:block}
+textarea{resize:vertical;min-height:56px}
+.qpre{display:flex;gap:6px;margin-top:10px}
+.qpre button{border:1.5px solid var(--ink);border-radius:50%;width:34px;height:34px;background:none;font-weight:600;font-size:.78rem;display:flex;align-items:center;justify-content:center;transition:background .12s var(--ease),color .12s var(--ease)}
+.qpre button:hover{background:var(--ink);color:var(--paper)}
+.name-preview{display:flex;align-items:center;gap:10px;margin-top:14px;font-weight:600;font-size:.95rem;min-height:28px}
+@media (prefers-reduced-motion: no-preference){
+  dialog[open]{animation:dlg-in .22s var(--ease)}
+  @keyframes dlg-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+}
+
+/* ════════ TOAST ════════ */
+#toasts{position:fixed;left:26px;bottom:26px;z-index:var(--z-toast);display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{
+  background:var(--ink);color:var(--paper);padding:11px 19px;font-size:.84rem;font-weight:500;
+  border-radius:999px;box-shadow:var(--shadow-soft);
+  display:flex;align-items:center;gap:10px;max-width:340px;
+}
+.toast .mark{flex:none}
+@media (prefers-reduced-motion: no-preference){
+  .toast{animation:toast-in .25s var(--ease)}
+  @keyframes toast-in{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:none}}
+}
+
+/* ════════ ICONS ════════ */
+.ico{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ════════ MOTION — the chrome holds still; the artwork turns ════════
+   (ref video grammar: slow linear disc rotation, sliding stripe combs,
+    gentle satellite drift. State feedback stays 150-400ms.) */
+.checkbox .ico path{stroke-dasharray:26;stroke-dashoffset:26;transition:stroke-dashoffset .3s var(--ease) .04s}
+.checkbox[aria-checked="true"] .ico path{stroke-dashoffset:0}
+@media (prefers-reduced-motion: no-preference){
+  /* kinetic sculpture layer — continuous, slow, linear like the painting */
+  .brand-disc{animation:disc-rot 26s linear infinite}
+  .motif b{animation:disc-rot 16s linear infinite}
+  .empty .spin{transform-box:view-box;transform-origin:86px 31px;animation:disc-rot 22s linear infinite}
+  .empty .stripes{animation:stripe-slide 7s ease-in-out infinite alternate}
+  @keyframes disc-rot{to{transform:rotate(360deg)}}
+  @keyframes stripe-slide{from{transform:translateY(-2.5px)}to{transform:translateY(2.5px)}}
+  /* state choreography */
+  .tabpane.active{animation:pane-in .24s var(--ease)}
+  @keyframes pane-in{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+  .stagger .inv-row,.stagger .shop-row,.stagger .log-row{
+    animation:row-in .4s var(--ease) backwards;
+    animation-delay:calc(var(--i,0) * 26ms);
+  }
+  @keyframes row-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  dialog[open]::backdrop{animation:backdrop-in .25s var(--ease)}
+  @keyframes backdrop-in{from{opacity:0}to{opacity:1}}
+  .mtab[aria-current="page"]::after{animation:dock-dot .25s var(--ease)}
+  @keyframes dock-dot{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  /* press feedback */
+  .btn:hover{transform:translateY(-1px)}
+  .btn:active{transform:translateY(0) scale(.97)}
+  .stp button:active{transform:scale(.86)}
+  .ibtn:active,.checkbox:active,.qpre button:active{transform:scale(.9)}
+}
+
+/* ════════ RESPONSIVE ════════ */
+@media (max-width:1080px){
+  .hd-in{gap:14px}
+  .tab-btn{padding:0 11px}
+}
+@media (max-width:920px){
+  .brand{gap:9px}
+  .brand svg{width:28px;height:28px}
+  .brand-name{font-size:1.02rem}
+  .brand-sub{display:none}
+  .tab-btn{padding:0 9px;font-size:.8rem}
+  .hd-right{gap:10px}
+  .me-chip{padding:4px 11px 4px 8px;font-size:.74rem}
+}
+@media (max-width:980px){
+  .inv-head,.inv-row{grid-template-columns:minmax(0,2fr) 158px 136px 76px 76px}
+  .upd-cell,.inv-head .h-upd{display:none}
+}
+@media (max-width:760px){
+  body{padding:10px 8px}
+  .frame{min-height:calc(100dvh - 20px);border-radius:18px}
+  header{border-radius:18px 18px 0 0}
+  .hd-in{padding:0 16px;gap:14px}
+  nav.tabs{display:none}
+  main{padding:20px 16px 122px}
+  .inv-head{display:none}
+  .inv-row{
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-areas:"name chip" "qty qty" "gauge act";
+    gap:10px 12px;padding:14px 2px;
+  }
+  .cell-name{grid-area:name}.cell-chip{grid-area:chip;width:84px;justify-self:end}
+  .cell-qty{grid-area:qty}.cell-gauge{grid-area:gauge;align-self:center}
+  .cell-act{grid-area:act}
+  .chip{width:84px}
+  .band-cell{padding:12px 14px 10px}
+  .band-num{font-size:1.4rem}
+  .pane-title{font-size:1.3rem}
+  #toasts{left:18px;right:18px;bottom:96px}
+  /* floating bottom dock */
+  nav.mobtabs{
+    display:flex;position:fixed;left:10px;right:10px;bottom:10px;z-index:var(--z-nav);
+    background:var(--paper);border:1px solid var(--line);border-radius:16px;
+    box-shadow:0 18px 44px -16px oklch(0.15 0.06 28 / .6);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .mtab{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+    border:none;background:none;padding:10px 0 8px;color:var(--ink2);
+    font-size:.58rem;font-weight:600;letter-spacing:.12em;position:relative;
+    border-radius:14px;
+  }
+  .mtab .ico{width:19px;height:19px}
+  .mtab[aria-current="page"]{color:var(--act)}
+  .mtab[aria-current="page"]::after{content:'';position:absolute;bottom:3px;width:14px;height:2.5px;border-radius:2px;background:var(--act)}
+  .mtab .tab-badge{position:absolute;top:4px;right:calc(50% - 22px)}
+}
+@media (min-width:761px){nav.mobtabs{display:none}}
+@media (max-width:430px){
+  .controls select{flex:1 1 40%}
+  .f-grid{grid-template-columns:1fr 1fr}
+  .f-2{grid-column:span 1}
+  #sync-lbl{display:none}
+  .hd-right{gap:6px}
+}
+@media (pointer:coarse){
+  .ibtn,.stp button,.checkbox{min-width:40px;min-height:40px}
+  .seg button,.btn{min-height:42px}
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+
+<div class="frame">
+<header>
+  <div class="hd-in">
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+        <circle cx="17" cy="17" r="15.2" fill="none" stroke="var(--ink)" stroke-width="1.8"/>
+        <polygon points="17,8.5 25.5,23.5 8.5,23.5" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linejoin="round"/>
+        <g class="brand-disc">
+          <circle cx="17" cy="19.5" r="3.4" fill="var(--act)"/>
+          <path d="M17 16.1 a3.4 3.4 0 0 0 0 6.8 Z" fill="var(--ink)"/>
+        </g>
+      </svg>
+      <div>
+        <div class="brand-name">A<em>&amp;</em>G</div>
+        <div class="brand-sub">Home Inventory</div>
+      </div>
+    </div>
+    <nav class="tabs" aria-label="Primary">
+      <button class="tab-btn" data-tab="inventory" aria-current="page" onclick="showTab('inventory')">
+        Inventory
+      </button>
+      <button class="tab-btn" data-tab="shopping" onclick="showTab('shopping')">
+        Shopping <span class="tab-badge" id="badge-shop" hidden></span>
+      </button>
+      <button class="tab-btn" data-tab="activity" onclick="showTab('activity')">
+        Activity
+      </button>
+      <button class="tab-btn" data-tab="settings" onclick="showTab('settings')">
+        Settings
+      </button>
+    </nav>
+    <div class="hd-right">
+      <button class="sync-chip" id="sync-chip" onclick="showTab('settings')" title="Sync status — see Settings">
+        <span class="sync-dot"></span><span id="sync-lbl">LOCAL</span>
+      </button>
+      <button class="ibtn" id="theme-btn" onclick="toggleTheme()" aria-label="Switch to night mode">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="8.5"/>
+          <path d="M12 3.5 A8.5 8.5 0 0 0 12 20.5 Z" fill="currentColor" stroke="none"/>
+        </svg>
+      </button>
+      <button class="me-chip" id="me-chip" onclick="openNameDialog(false)" aria-label="Change your name">
+        <span class="mark" id="me-mark"></span><span id="me-name">—</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ════════ INVENTORY ════════ -->
+  <section class="tabpane active" id="tab-inventory" aria-label="Inventory">
+    <div class="band" id="stat-band">
+      <div class="band-cell">
+        <span class="band-num num" id="st-total">0</span>
+        <span class="band-lbl">ITEMS TRACKED</span>
+      </div>
+      <div class="band-cell">
+        <span class="band-num num" id="st-ok">0</span>
+        <span class="band-lbl">STOCKED</span>
+      </div>
+      <button class="band-cell" id="st-low-btn" onclick="bandFilter('low')" aria-label="Filter: running low">
+        <span class="band-num num sig-low" id="st-low">0</span>
+        <span class="band-lbl">RUNNING LOW</span>
+      </button>
+      <button class="band-cell" id="st-buy-btn" onclick="bandFilter('buy')" aria-label="Filter: buy now">
+        <span class="band-num num sig-buy" id="st-buy">0</span>
+        <span class="band-lbl">BUY NOW</span>
+      </button>
+    </div>
+
+    <div class="controls">
+      <div class="search-wrap">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
+        <input type="search" id="inv-search" placeholder="Search items…" aria-label="Search items" oninput="renderInventory()" />
+      </div>
+      <select id="inv-cat" aria-label="Filter by category" onchange="renderInventory()"></select>
+      <div class="seg" role="group" aria-label="Filter by status">
+        <button id="seg-all" aria-pressed="true"  onclick="setStatusFilter('all')">ALL</button>
+        <button id="seg-low" aria-pressed="false" onclick="setStatusFilter('low')">LOW</button>
+        <button id="seg-buy" aria-pressed="false" onclick="setStatusFilter('buy')">BUY</button>
+      </div>
+      <select id="inv-sort" aria-label="Sort" onchange="renderInventory()">
+        <option value="status">Sort · Status</option>
+        <option value="name">Sort · Name</option>
+        <option value="qty-asc">Sort · Qty low→high</option>
+        <option value="qty-desc">Sort · Qty high→low</option>
+        <option value="recent">Sort · Recently updated</option>
+      </select>
+      <button class="btn btn-primary" onclick="openItemDialog()">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        ADD ITEM
+      </button>
+    </div>
+
+    <div class="inv-head" aria-hidden="true">
+      <span>ITEM</span><span>STOCK</span><span>LEVEL</span><span>STATUS</span><span class="h-upd">UPDATED</span><span></span>
+    </div>
+    <div id="inv-list"></div>
+  </section>
+
+  <!-- ════════ SHOPPING ════════ -->
+  <section class="tabpane" id="tab-shopping" aria-label="Shopping list">
+    <div class="pane-head">
+      <div>
+        <div class="motif" aria-hidden="true"><i></i><b></b><i></i></div>
+        <h2 class="pane-title">Shopping list</h2>
+      </div>
+      <span class="pane-note" id="shop-note"></span>
+    </div>
+    <div class="sect"><span class="sq" style="background:var(--act)"></span>TO BUY <span class="count" id="auto-count"></span></div>
+    <div id="shop-auto"></div>
+    <div class="sect"><span class="sq" style="background:var(--rose)"></span>ALSO PICK UP <span class="count" id="man-count"></span></div>
+    <div class="manual-add">
+      <input type="text" id="man-input" placeholder="Add anything — e.g. birthday candles" aria-label="Add a one-off shopping item" maxlength="60" onkeydown="if(event.key==='Enter')addManual()" />
+      <button class="btn" onclick="addManual()">ADD</button>
+    </div>
+    <div id="shop-manual"></div>
+  </section>
+
+  <!-- ════════ ACTIVITY ════════ -->
+  <section class="tabpane" id="tab-activity" aria-label="Activity log">
+    <div class="pane-head">
+      <div>
+        <div class="motif" aria-hidden="true"><i></i><b></b><i></i></div>
+        <h2 class="pane-title">Activity</h2>
+      </div>
+      <span class="pane-note">every change, attributed</span>
+    </div>
+    <div class="controls">
+      <select id="log-who" aria-label="Filter by member" onchange="renderActivity()"></select>
+    </div>
+    <div id="log-list"></div>
+  </section>
+
+  <!-- ════════ SETTINGS ════════ -->
+  <section class="tabpane" id="tab-settings" aria-label="Settings">
+    <div class="pane-head">
+      <div>
+        <div class="motif" aria-hidden="true"><i></i><b></b><i></i></div>
+        <h2 class="pane-title">Settings</h2>
+      </div>
+      <span class="pane-note" id="set-note"></span>
+    </div>
+    <div class="set-grid">
+      <div>
+        <div class="set-block">
+          <div class="sect" style="margin-top:0"><span class="sq" style="background:var(--act)"></span>YOU, ON THIS DEVICE</div>
+          <div class="set-help">Changes you make are signed with this name. Each housemate sets their own name on their own device.</div>
+          <div class="set-row">
+            <span class="mark" id="set-mark"></span>
+            <strong id="set-name" style="letter-spacing:.04em">—</strong>
+            <button class="btn" onclick="openNameDialog(false)">CHANGE</button>
+          </div>
+        </div>
+        <div class="set-block">
+          <div class="sect"><span class="sq" style="background:var(--ochre)"></span>CATEGORIES</div>
+          <div class="cat-list" id="cat-list"></div>
+          <div class="set-row">
+            <input type="text" id="cat-input" placeholder="New category" maxlength="28" style="max-width:220px" onkeydown="if(event.key==='Enter')addCat()" />
+            <button class="btn" onclick="addCat()">ADD</button>
+          </div>
+        </div>
+        <div class="set-block">
+          <div class="sect"><span class="sq" style="background:var(--ink)"></span>HOUSEHOLD SYNC</div>
+          <div class="set-help" id="sync-help"></div>
+        </div>
+      </div>
+      <div>
+        <div class="set-block">
+          <div class="sect" style="margin-top:0"><span class="sq" style="background:var(--ink)"></span>DATA</div>
+          <div class="set-row">
+            <button class="btn" onclick="exportJson()">
+              <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
+              EXPORT
+            </button>
+            <button class="btn" onclick="document.getElementById('import-file').click()">
+              <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M4 21h16"/></svg>
+              IMPORT
+            </button>
+            <input type="file" id="import-file" accept=".json,application/json" hidden onchange="importJson(this)" />
+          </div>
+          <div class="set-help">Export a JSON backup, or restore one. Import replaces everything.</div>
+          <div class="set-row" style="margin-top:18px">
+            <button class="btn" id="sample-btn" onclick="loadSample(true)">LOAD SAMPLE DATA</button>
+            <button class="btn btn-danger" onclick="resetAll()">RESET ALL</button>
+          </div>
+        </div>
+        <div class="set-block">
+          <div class="sect"><span class="sq" style="background:var(--ochre)"></span>HOW THRESHOLDS WORK</div>
+          <div class="set-help">
+            Each item has two alert levels. At or below <strong>low</strong> it turns
+            <span style="background:var(--ochre);color:var(--on-ochre);padding:0 8px;border-radius:999px;font-weight:700">OCHRE</span>; at or below
+            <strong>buy</strong> it turns <span style="background:var(--act);color:var(--paper);padding:0 8px;border-radius:999px;font-weight:700">RED</span>
+            and joins the shopping list automatically. Plain ink means stocked — a colorless list is a full pantry.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+</div>
+
+<!-- ════════ MOBILE NAV ════════ -->
+<nav class="mobtabs" aria-label="Primary">
+  <button class="mtab" data-tab="inventory" aria-current="page" onclick="showTab('inventory')">
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M3 8l2-5h14l2 5M12 3v5"/></svg>
+    ITEMS
+  </button>
+  <button class="mtab" data-tab="shopping" onclick="showTab('shopping')">
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h3l2.5 12.5H19L21.5 7H7"/><circle cx="10" cy="20" r="1.6"/><circle cx="17.5" cy="20" r="1.6"/></svg>
+    SHOP <span class="tab-badge" id="badge-shop-m" hidden></span>
+  </button>
+  <button class="mtab" data-tab="activity" onclick="showTab('activity')">
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
+    LOG
+  </button>
+  <button class="mtab" data-tab="settings" onclick="showTab('settings')">
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.2"/></svg>
+    SETUP
+  </button>
+</nav>
+
+<!-- ════════ ITEM DIALOG ════════ -->
+<dialog id="dlg-item" aria-labelledby="dlg-item-title">
+  <div class="dlg-head">
+    <span class="dlg-title" id="dlg-item-title">Add item</span>
+    <button class="ibtn" onclick="closeDlg('dlg-item')" aria-label="Close">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>
+    </button>
+  </div>
+  <form id="item-form" novalidate onsubmit="saveItem(event)">
+    <div class="dlg-body">
+      <div class="f-grid">
+        <div class="f-full" id="fw-name">
+          <label class="f-lbl" for="fi-name">NAME</label>
+          <input type="text" id="fi-name" maxlength="60" autocomplete="off" />
+          <div class="f-err">Give it a name.</div>
+        </div>
+        <div class="f-2">
+          <label class="f-lbl" for="fi-cat">CATEGORY</label>
+          <select id="fi-cat" style="width:100%"></select>
+        </div>
+        <div>
+          <label class="f-lbl" for="fi-unit">UNIT</label>
+          <input type="text" id="fi-unit" placeholder="bottle" maxlength="14" />
+        </div>
+        <div>
+          <label class="f-lbl" for="fi-qty">QUANTITY</label>
+          <input type="number" id="fi-qty" min="0" max="9999" value="1" inputmode="numeric" class="num" />
+        </div>
+        <div>
+          <label class="f-lbl" for="fi-warn">LOW AT ≤</label>
+          <input type="number" id="fi-warn" min="0" max="9999" value="1" inputmode="numeric" class="num" />
+        </div>
+        <div>
+          <label class="f-lbl" for="fi-buy">BUY AT ≤</label>
+          <input type="number" id="fi-buy" min="0" max="9999" value="0" inputmode="numeric" class="num" />
+        </div>
+        <div class="f-full">
+          <label class="f-lbl" for="fi-store">USUAL STORE <span style="font-weight:400">— optional</span></label>
+          <input type="text" id="fi-store" maxlength="40" />
+        </div>
+        <div class="f-full">
+          <label class="f-lbl" for="fi-note">NOTES <span style="font-weight:400">— optional</span></label>
+          <textarea id="fi-note" maxlength="200" rows="2"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <button type="button" class="btn btn-danger spacer" id="fi-delete" hidden onclick="deleteFromDialog()">DELETE</button>
+      <button type="button" class="btn btn-ghost" onclick="closeDlg('dlg-item')">CANCEL</button>
+      <button type="submit" class="btn btn-primary" id="fi-submit">ADD ITEM</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ════════ RESTOCK DIALOG ════════ -->
+<dialog id="dlg-restock" aria-labelledby="dlg-restock-title">
+  <div class="dlg-head">
+    <span class="dlg-title" id="dlg-restock-title">Bought it</span>
+    <button class="ibtn" onclick="closeDlg('dlg-restock')" aria-label="Close">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>
+    </button>
+  </div>
+  <form onsubmit="confirmRestock(event)">
+    <div class="dlg-body">
+      <p style="font-size:.9rem;margin-bottom:14px">How many <strong id="rs-name">—</strong> did you buy?</p>
+      <label class="f-lbl" for="rs-qty">QUANTITY ADDED</label>
+      <input type="number" id="rs-qty" min="1" max="9999" value="1" inputmode="numeric" class="num" style="max-width:140px" />
+      <div class="qpre">
+        <button type="button" onclick="rsSet(1)">1</button>
+        <button type="button" onclick="rsSet(2)">2</button>
+        <button type="button" onclick="rsSet(4)">4</button>
+        <button type="button" onclick="rsSet(6)">6</button>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <button type="button" class="btn btn-ghost" onclick="closeDlg('dlg-restock')">CANCEL</button>
+      <button type="submit" class="btn btn-primary">ADD TO STOCK</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ════════ CONFIRM DIALOG ════════ -->
+<dialog id="dlg-confirm" aria-labelledby="dlg-confirm-title">
+  <div class="dlg-head">
+    <span class="dlg-title" id="dlg-confirm-title">Are you sure?</span>
+    <button class="ibtn" onclick="closeDlg('dlg-confirm')" aria-label="Close">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>
+    </button>
+  </div>
+  <div class="dlg-body"><p style="font-size:.9rem" id="confirm-msg"></p></div>
+  <div class="dlg-foot">
+    <button type="button" class="btn btn-ghost" onclick="closeDlg('dlg-confirm')">CANCEL</button>
+    <button type="button" class="btn btn-danger" id="confirm-yes">DELETE</button>
+  </div>
+</dialog>
+
+<!-- ════════ NAME DIALOG ════════ -->
+<dialog id="dlg-name" aria-labelledby="dlg-name-title">
+  <div class="dlg-head">
+    <span class="dlg-title" id="dlg-name-title">Who's this?</span>
+    <button class="ibtn" id="name-close" onclick="closeDlg('dlg-name')" aria-label="Close">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>
+    </button>
+  </div>
+  <form onsubmit="saveName(event)">
+    <div class="dlg-body">
+      <p style="font-size:.9rem;margin-bottom:14px">Your changes get signed with your name, so the household knows who used the last of the rice.</p>
+      <div id="fw-yname">
+        <label class="f-lbl" for="yname">YOUR NAME</label>
+        <input type="text" id="yname" maxlength="24" autocomplete="given-name" oninput="previewMark()" />
+        <div class="f-err">A name is required.</div>
+      </div>
+      <div class="name-preview"><span id="yname-mark"></span><span id="yname-echo"></span></div>
+    </div>
+    <div class="dlg-foot">
+      <button type="submit" class="btn btn-primary">START</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toasts" aria-live="polite" aria-atomic="false"></div>
+
+<script>
+'use strict';
+/* ════════════════════════════════════════════════════════════
+   A&G (formerly VORRAT) — shared home inventory. Single file, no build step.
+   localStorage keys keep the vorrat_ prefix so existing data survives the rename.
+   Sync: Firebase Firestore when configured (see SETUP.md),
+   otherwise local mode (this browser only, localStorage).
+   ════════════════════════════════════════════════════════════ */
+
+const FIREBASE_CONFIG = {
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
+};
+
+const LS_DB = 'vorrat_db_v1';
+const LS_NAME = 'vorrat_name';
+const LS_THEME = 'vorrat_theme';
+const DEFAULT_CATS = ['Pantry','Fridge & Freezer','Cleaning','Bathroom','Laundry','Paper & Disposables','First Aid','Other'];
+
+/* Gallery marks: shape+color pairs assigned to housemates in order of appearance. */
+const COMBOS = [
+  ['circle','--act'],['triangle','--ochre'],['square','--ink'],
+  ['circle','--rose'],['triangle','--act'],['square','--ochre'],
+  ['circle','--ink'],['triangle','--rose'],['square','--act'],
+];
+
+let state = { items:[], cats:DEFAULT_CATS.slice(), shop:[], log:[], members:{} };
+let mode = 'local';            // 'local' | 'cloud'
+let fdb = null;                // Firestore handle in cloud mode
+let statusFilter = 'all';
+let editingId = null, restockId = null, _refocus = null;
+const pendingQty = {};         // id → {delta, timer} for aggregated qty logging
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Math.random().toString(36).slice(2,10) + Date.now().toString(36);
+
+/* ──────── identity & marks ──────── */
+const myName = () => localStorage.getItem(LS_NAME) || '';
+
+function ensureMember(name){
+  if(!name || state.members[name] != null) return;
+  const used = Object.values(state.members);
+  let i = 0;
+  while(used.includes(i % COMBOS.length) && i < COMBOS.length) i++;
+  state.members[name] = i % COMBOS.length;
+  persistMeta();
+}
+function markSvg(name, size=16){
+  const combo = COMBOS[(state.members[name] ?? 0) % COMBOS.length];
+  const [shape, color] = combo;
+  const c = `var(${color})`, s = size, st = `stroke="var(--ink)" stroke-width="1"`;
+  let body = '';
+  if(shape==='circle')   body = `<circle cx="${s/2}" cy="${s/2}" r="${s/2-1}" fill="${c}" ${st}/>`;
+  if(shape==='square')   body = `<rect x="1.2" y="1.2" width="${s-2.4}" height="${s-2.4}" rx="2" fill="${c}" ${st}/>`;
+  if(shape==='triangle') body = `<polygon points="${s/2},1 ${s-1},${s-1} 1,${s-1}" fill="${c}" ${st} stroke-linejoin="round"/>`;
+  return `<svg class="mark" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" aria-hidden="true">${body}</svg>`;
+}
+
+/* ──────── status model ──────── */
+function statusOf(it){
+  const q = it.qty ?? 0;
+  if(q <= (it.buyAt ?? 0)) return 'buy';
+  if(q <= (it.warnAt ?? 0)) return 'low';
+  return 'ok';
+}
+const STATUS_LBL = { ok:'OK', low:'LOW', buy:'BUY' };
+
+/* ──────── persistence ──────── */
+function isConfigured(){ return FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY'; }
+
+function persistLocal(){
+  if(mode !== 'local') return;
+  localStorage.setItem(LS_DB, JSON.stringify({
+    items:state.items, cats:state.cats, shop:state.shop,
+    log:state.log.slice(0,500), members:state.members
+  }));
+}
+function loadLocal(){
+  try{
+    const raw = localStorage.getItem(LS_DB);
+    if(!raw) return false;
+    const d = JSON.parse(raw);
+    state.items = d.items||[]; state.cats = d.cats?.length ? d.cats : DEFAULT_CATS.slice();
+    state.shop = d.shop||[]; state.log = d.log||[]; state.members = d.members||{};
+    return true;
+  }catch(e){ console.error('local load failed', e); return false; }
+}
+
+/* Write-through helpers: every mutation goes through these. */
+function upsertItem(it){
+  const i = state.items.findIndex(x=>x.id===it.id);
+  if(i>=0) state.items[i]=it; else state.items.push(it);
+  if(mode==='cloud') fdb.collection('items').doc(it.id).set(it);
+  else persistLocal();
+}
+function removeItem(id){
+  state.items = state.items.filter(x=>x.id!==id);
+  if(mode==='cloud') fdb.collection('items').doc(id).delete();
+  else persistLocal();
+}
+function upsertShop(s){
+  const i = state.shop.findIndex(x=>x.id===s.id);
+  if(i>=0) state.shop[i]=s; else state.shop.push(s);
+  if(mode==='cloud') fdb.collection('shop').doc(s.id).set(s);
+  else persistLocal();
+}
+function removeShop(id){
+  state.shop = state.shop.filter(x=>x.id!==id);
+  if(mode==='cloud') fdb.collection('shop').doc(id).delete();
+  else persistLocal();
+}
+function addLog(glyph, tone, text){
+  const entry = { id:uid(), ts:Date.now(), who:myName()||'Someone', glyph, tone, text };
+  state.log.unshift(entry);
+  if(mode==='cloud') fdb.collection('log').doc(entry.id).set(entry);
+  else persistLocal();
+  renderActivity();
+}
+function persistMeta(){
+  if(mode==='cloud') fdb.collection('meta').doc('household').set({cats:state.cats, members:state.members});
+  else persistLocal();
+}
+
+/* ──────── cloud bootstrap ──────── */
+function loadScript(src){
+  return new Promise((res,rej)=>{
+    const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej;
+    document.head.appendChild(s);
+  });
+}
+async function initSync(){
+  if(!isConfigured()){ mode='local'; if(!loadLocal()) loadSample(false); afterLoad(); return; }
+  try{
+    await loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
+    await loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js');
+    firebase.initializeApp(FIREBASE_CONFIG);
+    fdb = firebase.firestore();
+    mode = 'cloud';
+    fdb.collection('items').onSnapshot(snap=>{
+      state.items = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      renderAll();
+    });
+    fdb.collection('shop').onSnapshot(snap=>{
+      state.shop = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      renderShopping(); renderBadges();
+    });
+    fdb.collection('log').orderBy('ts','desc').limit(400).onSnapshot(snap=>{
+      state.log = snap.docs.map(d=>d.data());
+      renderActivity();
+    });
+    fdb.collection('meta').doc('household').onSnapshot(doc=>{
+      const d = doc.data();
+      if(d){ state.cats = d.cats?.length ? d.cats : state.cats; state.members = d.members || state.members; }
+      renderCatControls(); renderHeader(); renderAll();
+    });
+    afterLoad();
+  }catch(e){
+    console.error('Firebase init failed — falling back to local mode.', e);
+    mode='local'; if(!loadLocal()) loadSample(false); afterLoad();
+    toast('Sync unavailable — running in local mode');
+  }
+}
+function afterLoad(){
+  const chip = $('sync-chip');
+  chip.classList.toggle('live', mode==='cloud');
+  $('sync-lbl').textContent = mode==='cloud' ? 'LIVE' : 'LOCAL';
+  chip.title = mode==='cloud' ? 'Synced with the household via Firestore' : 'Local mode — this browser only. See Settings.';
+  $('sync-help').innerHTML = mode==='cloud'
+    ? 'Connected. Every device with this page open sees changes in real time.'
+    : 'Running in <strong>local mode</strong> — data lives in this browser only. To share with the household, create a free Firebase project and paste its config into <code>FIREBASE_CONFIG</code> at the top of <code>index.html</code>. Step-by-step guide: <code>SETUP.md</code>.';
+  renderCatControls();
+  renderHeader();
+  renderAll();
+  const t = location.hash.slice(1);
+  if(TABS.includes(t)) showTab(t);
+  if(!myName()) openNameDialog(true);
+}
+
+/* ──────── sample data ──────── */
+function sampleItems(){
+  const n = Date.now(), who = ['Alex','Mika'];
+  const mk = (name,cat,unit,qty,warnAt,buyAt,store,note,i) => ({
+    id:uid(), name, cat, unit, qty, warnAt, buyAt, store:store||'', note:note||'',
+    updatedBy: who[i%2], updatedAt: n - (i+2)*36e5
+  });
+  return [
+    mk('Olive Oil','Pantry','bottle',2,1,0,'PARKnSHOP','Extra virgin, the green label',0),
+    mk('Jasmine Rice','Pantry','kg',1,2,1,'Wellcome','',1),
+    mk('Soy Sauce','Pantry','bottle',1,1,0,'Wellcome','Light soy',2),
+    mk('Coffee Beans','Pantry','bag',3,1,0,'Coffee Roasters','Whole bean, dark roast',3),
+    mk('Oat Milk','Fridge & Freezer','carton',4,2,1,'PARKnSHOP','Barista edition',4),
+    mk('Eggs','Fridge & Freezer','pcs',8,6,2,'Wet market','',5),
+    mk('Dish Soap','Cleaning','bottle',0,1,0,'PARKnSHOP','Lemon one',6),
+    mk('Sponges','Cleaning','pack',3,1,0,'','',7),
+    mk('All-Purpose Spray','Cleaning','bottle',2,1,0,'','',8),
+    mk('Laundry Detergent','Laundry','bottle',2,1,0,'PARKnSHOP','',9),
+    mk('Paper Towels','Paper & Disposables','roll',2,3,1,'PARKnSHOP','',10),
+    mk('Toilet Paper','Paper & Disposables','roll',9,6,2,'PARKnSHOP','',11),
+    mk('Trash Bags','Paper & Disposables','box',2,1,0,'','50L size',12),
+    mk('Toothpaste','Bathroom','tube',1,1,0,'Watsons','',13),
+    mk('Shampoo','Bathroom','bottle',2,1,0,'Watsons','',14),
+    mk('Plasters','First Aid','box',1,0,0,'Watsons','',15),
+    mk('Paracetamol','First Aid','pack',2,1,0,'Watsons','',16),
+    mk('AA Batteries','Other','pcs',4,4,2,'','For the kitchen scale',17),
+  ];
+}
+function loadSample(confirm_){
+  const doIt = () => {
+    state.items = sampleItems();
+    state.cats = DEFAULT_CATS.slice();
+    state.shop = [{id:uid(), name:'Birthday candles', done:false, addedBy:'Mika', ts:Date.now()-72e5}];
+    ensureMember('Alex'); ensureMember('Mika');
+    if(myName()) ensureMember(myName());
+    state.log = [
+      {id:uid(), ts:Date.now()-26e5, who:'Mika', glyph:'+', tone:'', text:'added “Birthday candles” to the shopping list'},
+      {id:uid(), ts:Date.now()-72e5, who:'Alex', glyph:'−', tone:'', text:'used the last Dish Soap — 0 left'},
+      {id:uid(), ts:Date.now()-30*36e5, who:'Mika', glyph:'✓', tone:'good', text:'restocked Toilet Paper +6 → 9 rolls'},
+    ];
+    if(mode==='cloud'){
+      state.items.forEach(it=>fdb.collection('items').doc(it.id).set(it));
+      state.shop.forEach(s=>fdb.collection('shop').doc(s.id).set(s));
+      state.log.forEach(l=>fdb.collection('log').doc(l.id).set(l));
+      persistMeta();
+    } else persistLocal();
+    renderCatControls(); renderHeader(); renderAll();
+    if(confirm_) toast('Sample household loaded');
+  };
+  if(confirm_ && state.items.length){
+    askConfirm('Load sample data?','This replaces the current inventory, shopping list and activity with sample data.','REPLACE',doIt);
+  } else doIt();
+}
+
+/* ──────── tabs ──────── */
+const TABS = ['inventory','shopping','activity','settings'];
+function showTab(name){
+  document.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('active', p.id==='tab-'+name));
+  document.querySelectorAll('[data-tab]').forEach(b=>{
+    if(b.dataset.tab===name) b.setAttribute('aria-current','page');
+    else b.removeAttribute('aria-current');
+  });
+  history.replaceState(null,'','#'+name);
+  window.scrollTo({top:0});
+}
+
+/* ──────── header ──────── */
+function renderHeader(){
+  const n = myName();
+  if(n) ensureMember(n);
+  $('me-name').textContent = n || 'SET NAME';
+  $('me-mark').outerHTML = n ? markSvg(n,16).replace('class="mark"','class="mark" id="me-mark"') : '<span class="mark" id="me-mark"></span>';
+  $('set-name').textContent = n || '—';
+  $('set-mark').outerHTML = n ? markSvg(n,18).replace('class="mark"','class="mark" id="set-mark"') : '<span class="mark" id="set-mark"></span>';
+}
+
+/* ──────── inventory render ──────── */
+function catOptions(sel){
+  const cats = state.cats.slice();
+  state.items.forEach(it=>{ if(it.cat && !cats.includes(it.cat)) cats.push(it.cat); });
+  return cats.map(c=>`<option value="${esc(c)}"${c===sel?' selected':''}>${esc(c)}</option>`).join('');
+}
+function renderCatControls(){
+  const cur = $('inv-cat').value;
+  $('inv-cat').innerHTML = `<option value="">All categories</option>` + catOptions(cur||null);
+  if(cur) $('inv-cat').value = cur;
+  const curF = $('fi-cat').value;
+  $('fi-cat').innerHTML = catOptions(curF||null);
+  renderCatList();
+}
+function setStatusFilter(f){
+  statusFilter = f;
+  ['all','low','buy'].forEach(k=>$('seg-'+k).setAttribute('aria-pressed', String(k===f)));
+  $('st-low-btn').classList.toggle('is-on', f==='low');
+  $('st-buy-btn').classList.toggle('is-on', f==='buy');
+  renderInventory();
+}
+function bandFilter(f){
+  setStatusFilter(statusFilter===f ? 'all' : f);
+  showTab('inventory');
+}
+function gaugePct(it){
+  const q = it.qty??0, w = Math.max(it.warnAt??0,1);
+  return Math.max(0, Math.min(100, Math.round(q / (w*2) * 100)));
+}
+function ago(ts){
+  if(!ts) return '';
+  const d = Date.now()-ts, m = Math.round(d/6e4);
+  if(m<1) return 'just now';
+  if(m<60) return m+'m ago';
+  const h = Math.round(m/60); if(h<24) return h+'h ago';
+  const dd = Math.round(h/24); if(dd<7) return dd+'d ago';
+  return new Date(ts).toLocaleDateString(undefined,{day:'numeric',month:'short'});
+}
+function renderInventory(){
+  renderStats();
+  const list = $('inv-list');
+  const q = ($('inv-search').value||'').trim().toLowerCase();
+  const cat = $('inv-cat').value;
+  let arr = state.items.slice();
+  if(q) arr = arr.filter(i => (i.name+' '+(i.note||'')+' '+(i.store||'')).toLowerCase().includes(q));
+  if(cat) arr = arr.filter(i => i.cat===cat);
+  if(statusFilter!=='all') arr = arr.filter(i => statusOf(i)===statusFilter);
+  const rank = {buy:0, low:1, ok:2};
+  switch($('inv-sort').value){
+    case 'name': arr.sort((a,b)=>a.name.localeCompare(b.name)); break;
+    case 'qty-asc': arr.sort((a,b)=>(a.qty??0)-(b.qty??0)); break;
+    case 'qty-desc': arr.sort((a,b)=>(b.qty??0)-(a.qty??0)); break;
+    case 'recent': arr.sort((a,b)=>(b.updatedAt??0)-(a.updatedAt??0)); break;
+    default: arr.sort((a,b)=> rank[statusOf(a)]-rank[statusOf(b)] || a.name.localeCompare(b.name));
+  }
+  document.querySelector('.inv-head').style.display = arr.length ? '' : 'none';
+  if(!state.items.length){
+    list.innerHTML = emptyBox(
+      'Nothing tracked yet',
+      'Add the things your household runs out of — soap, rice, batteries. A&amp;G watches the levels and builds the shopping list for you.',
+      `<button class="btn btn-primary" onclick="openItemDialog()">ADD FIRST ITEM</button>
+       <button class="btn" onclick="loadSample(true)">LOAD SAMPLE DATA</button>`);
+    return;
+  }
+  if(!arr.length){
+    list.innerHTML = emptyBox('No matches',
+      q ? `Nothing matches “${esc(q)}” with the current filters.` : 'Nothing matches the current filters.',
+      `<button class="btn" onclick="clearFilters()">CLEAR FILTERS</button>`);
+    return;
+  }
+  list.innerHTML = arr.map((it,ix)=>{
+    const st = statusOf(it);
+    const meta = [it.cat, it.store].filter(Boolean).map(esc).join(' · ');
+    const note = it.note ? ` <span class="note-glyph" title="${esc(it.note)}">●</span>` : '';
+    return `<div class="inv-row" id="row-${it.id}" style="--i:${Math.min(ix,14)}">
+      <div class="cell-name" style="min-width:0">
+        <div class="iname">${esc(it.name)}${note}</div>
+        <div class="imeta">${meta||'&nbsp;'}</div>
+      </div>
+      <div class="qty-cell cell-qty">
+        <span class="qty-val num">${it.qty??0}</span>
+        <span class="qty-unit">${esc(it.unit||'')}</span>
+        <div class="stp">
+          <button id="qm-${it.id}" onclick="adjustQty('${it.id}',-1)" ${ (it.qty??0)<=0?'disabled':'' } aria-label="Use one ${esc(it.name)}">−</button>
+          <button id="qp-${it.id}" onclick="adjustQty('${it.id}',1)" aria-label="Add one ${esc(it.name)}">+</button>
+        </div>
+      </div>
+      <div class="gauge cell-gauge">
+        <div class="gauge-track"><div class="gauge-fill ${st!=='ok'?st:''}" style="width:${gaugePct(it)}%"></div></div>
+        <div class="gauge-lbl num">low ≤${it.warnAt??0} · buy ≤${it.buyAt??0}</div>
+      </div>
+      <div class="cell-chip"><span class="chip ${st!=='ok'?st:''}">${STATUS_LBL[st]}</span></div>
+      <div class="upd-cell">${it.updatedBy?markSvg(it.updatedBy,13):''}<span>${esc(it.updatedBy||'')}${it.updatedAt?' · '+ago(it.updatedAt):''}</span></div>
+      <div class="row-actions cell-act">
+        <button class="ibtn" onclick="openItemDialog('${it.id}')" aria-label="Edit ${esc(it.name)}">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16.5 4.5l3 3L8 19l-4 1z"/></svg>
+        </button>
+        <button class="ibtn danger" onclick="askDeleteItem('${it.id}')" aria-label="Delete ${esc(it.name)}">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+  if(_refocus){ const el=$(_refocus); if(el) el.focus(); _refocus=null; }
+}
+function clearFilters(){
+  $('inv-search').value=''; $('inv-cat').value='';
+  setStatusFilter('all');
+}
+/* painterly mini-composition for empty states */
+function emptyBox(title, text, actions){
+  return `<div class="empty">
+    <svg width="150" height="64" viewBox="0 0 150 64" aria-hidden="true">
+      <g class="f1">
+        <rect x="58" y="4" width="26" height="56" rx="4" fill="var(--terra)"/>
+        <path class="spin" d="M86 10 A 21 21 0 1 0 86 52 Z" fill="var(--ink)"/>
+      </g>
+      <g class="f2">
+        <rect x="24" y="24" width="20" height="20" rx="2" fill="var(--ochre)"/>
+        <g class="stripes"><path d="M28 26v16M33 26v16M38 26v16" stroke="var(--ink)" stroke-width="1" opacity=".45"/></g>
+        <circle cx="34" cy="12" r="8" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
+      </g>
+      <g class="f3">
+        <path d="M108 52 L 140 16" stroke="var(--ink)" stroke-width="1.4"/>
+        <circle cx="124" cy="34" r="9" fill="var(--ochre)"/>
+        <path d="M124 25 A 9 9 0 0 0 124 43 Z" fill="var(--ink)"/>
+        <circle cx="142" cy="54" r="7" fill="var(--rose)"/>
+      </g>
+    </svg>
+    <h3>${title}</h3><p>${text}</p>${actions}
+  </div>`;
+}
+/* serif numerals tick to their new value — gallery flavor, state feedback */
+function tickNum(el, to){
+  const from = parseInt(el.textContent)||0;
+  if(from===to){ el.textContent=to; return; }
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches || document.hidden){
+    el.textContent=to; return;
+  }
+  const t0 = performance.now(), dur = 380;
+  const step = now => {
+    const p = Math.min(1,(now-t0)/dur), e = 1-Math.pow(1-p,3);
+    el.textContent = Math.round(from+(to-from)*e);
+    if(p<1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+function renderStats(){
+  const t = state.items.length;
+  let ok=0, low=0, buy=0;
+  state.items.forEach(i=>{ const s=statusOf(i); if(s==='ok')ok++; else if(s==='low')low++; else buy++; });
+  tickNum($('st-total'),t); tickNum($('st-ok'),ok);
+  tickNum($('st-low'),low); tickNum($('st-buy'),buy);
+  // color is signal: a zero carries none
+  $('st-low').classList.toggle('sig-low', low>0);
+  $('st-buy').classList.toggle('sig-buy', buy>0);
+}
+
+/* ──────── qty changes (aggregated logging) ──────── */
+function adjustQty(id, delta){
+  const it = state.items.find(x=>x.id===id);
+  if(!it) return;
+  const next = Math.max(0,(it.qty??0)+delta);
+  if(next === it.qty) return;
+  it.qty = next;
+  it.updatedBy = myName()||'Someone';
+  it.updatedAt = Date.now();
+  upsertItem(it);
+  if(!pendingQty[id]) pendingQty[id] = {delta:0, timer:null, name:it.name};
+  pendingQty[id].delta += delta;
+  clearTimeout(pendingQty[id].timer);
+  pendingQty[id].timer = setTimeout(()=>flushQtyLog(id), 1600);
+  _refocus = (delta<0?'qm-':'qp-')+id;
+  renderInventory(); renderShopping(); renderBadges();
+  const row = $('row-'+id);
+  if(row){ row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash'); }
+}
+function flushQtyLog(id){
+  const p = pendingQty[id]; if(!p || !p.delta){ delete pendingQty[id]; return; }
+  const it = state.items.find(x=>x.id===id);
+  const left = it ? ` → ${it.qty} left` : '';
+  addLog(p.delta>0?'+':'−', '', `${p.delta>0?'added':'used'} ${Math.abs(p.delta)} ${esc(p.name)}${left}`);
+  delete pendingQty[id];
+}
+
+/* ──────── item dialog ──────── */
+function openItemDialog(id){
+  editingId = id||null;
+  const it = id ? state.items.find(x=>x.id===id) : null;
+  $('dlg-item-title').textContent = it ? 'Edit item' : 'Add item';
+  $('fi-submit').textContent = it ? 'SAVE' : 'ADD ITEM';
+  $('fi-delete').hidden = !it;
+  $('fw-name').classList.remove('f-bad');
+  renderCatControls();
+  $('fi-name').value = it?.name||'';
+  $('fi-cat').value = it?.cat||state.cats[0]||'';
+  $('fi-unit').value = it?.unit||'';
+  $('fi-qty').value = it?.qty??1;
+  $('fi-warn').value = it?.warnAt??1;
+  $('fi-buy').value = it?.buyAt??0;
+  $('fi-store').value = it?.store||'';
+  $('fi-note').value = it?.note||'';
+  $('dlg-item').showModal();
+  $('fi-name').focus();
+}
+function saveItem(ev){
+  ev.preventDefault();
+  const name = $('fi-name').value.trim();
+  if(!name){ $('fw-name').classList.add('f-bad'); $('fi-name').focus(); return; }
+  const n = v => Math.max(0, Math.min(9999, parseInt(v)||0));
+  let warnAt = n($('fi-warn').value), buyAt = n($('fi-buy').value);
+  if(buyAt > warnAt) warnAt = buyAt; // buy threshold can't sit above low threshold
+  const base = editingId ? state.items.find(x=>x.id===editingId) : null;
+  const it = {
+    id: editingId || uid(),
+    name, cat: $('fi-cat').value || 'Other',
+    unit: $('fi-unit').value.trim(), qty: n($('fi-qty').value),
+    warnAt, buyAt,
+    store: $('fi-store').value.trim(), note: $('fi-note').value.trim(),
+    createdAt: base?.createdAt || Date.now(),
+    updatedBy: myName()||'Someone', updatedAt: Date.now()
+  };
+  upsertItem(it);
+  addLog(base?'✎':'+', '', `${base?'edited':'added'} ${esc(name)}`);
+  closeDlg('dlg-item');
+  renderAll();
+  toast(`${base?'Saved':'Added'} — ${name}`);
+}
+function askDeleteItem(id){
+  const it = state.items.find(x=>x.id===id); if(!it) return;
+  askConfirm('Delete item?', `“${esc(it.name)}” and its history attribution will be removed from the inventory.`, 'DELETE', ()=>{
+    removeItem(id);
+    addLog('✕','crit',`deleted ${esc(it.name)}`);
+    renderAll();
+    toast(`Deleted — ${it.name}`);
+  });
+}
+function deleteFromDialog(){
+  if(!editingId) return;
+  closeDlg('dlg-item');
+  askDeleteItem(editingId);
+}
+
+/* ──────── shopping ──────── */
+function autoShopItems(){
+  return state.items.filter(i=>statusOf(i)==='buy').sort((a,b)=>a.name.localeCompare(b.name));
+}
+function renderShopping(){
+  const auto = autoShopItems();
+  $('auto-count').textContent = auto.length ? auto.length+' item'+(auto.length>1?'s':'') : '';
+  $('shop-auto').innerHTML = auto.length ? auto.map((it,ix)=>`
+    <div class="shop-row" style="--i:${Math.min(ix,14)}">
+      <span class="mark" aria-hidden="true" style="width:10px;height:10px;border-radius:50%;background:var(--act)"></span>
+      <div style="min-width:0">
+        <div class="shop-name">${esc(it.name)}</div>
+        <div class="shop-meta">${[it.cat, it.store].filter(Boolean).map(esc).join(' · ')}</div>
+      </div>
+      <div class="shop-need">
+        <span class="shop-qty num">${it.qty??0} <small>${esc(it.unit||'left')}</small></span>
+        <button class="btn" onclick="openRestock('${it.id}')">BOUGHT</button>
+      </div>
+    </div>`).join('')
+  : `<div style="padding:18px 4px;font-size:.85rem;color:var(--ink2)">Nothing below its buy level — the house is stocked.</div>`;
+
+  const man = state.shop.slice().sort((a,b)=>(a.done?1:0)-(b.done?1:0) || (b.ts??0)-(a.ts??0));
+  const open = man.filter(m=>!m.done).length;
+  $('man-count').textContent = man.length ? (open ? open+' open' : 'all done') : '';
+  $('shop-manual').innerHTML = man.map((m,ix)=>`
+    <div class="shop-row ${m.done?'done':''}" style="--i:${Math.min(ix,14)}">
+      <button class="checkbox" role="checkbox" aria-checked="${m.done?'true':'false'}" aria-label="Mark ${esc(m.name)} ${m.done?'not bought':'bought'}" onclick="toggleManual('${m.id}')">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>
+      </button>
+      <div style="min-width:0">
+        <div class="shop-name">${esc(m.name)}</div>
+        <div class="shop-meta">${esc(m.addedBy||'')}</div>
+      </div>
+      <div class="shop-need">
+        <button class="ibtn danger" onclick="removeManual('${m.id}')" aria-label="Remove ${esc(m.name)}">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>
+        </button>
+      </div>
+    </div>`).join('') || `<div style="padding:18px 4px;font-size:.85rem;color:var(--ink2)">One-off things to grab — anything typed here is shared with the household.</div>`;
+
+  const total = auto.length + open;
+  $('shop-note').textContent = total ? total+' to buy' : 'nothing to buy';
+}
+function renderBadges(){
+  const total = autoShopItems().length + state.shop.filter(m=>!m.done).length;
+  ['badge-shop','badge-shop-m'].forEach(id=>{
+    const b = $(id); b.hidden = !total; b.textContent = total;
+  });
+}
+function addManual(){
+  const v = $('man-input').value.trim();
+  if(!v) return;
+  upsertShop({id:uid(), name:v, done:false, addedBy:myName()||'Someone', ts:Date.now()});
+  addLog('+','',`added “${esc(v)}” to the shopping list`);
+  $('man-input').value='';
+  renderShopping(); renderBadges();
+}
+function toggleManual(id){
+  const m = state.shop.find(x=>x.id===id); if(!m) return;
+  m.done = !m.done;
+  upsertShop(m);
+  if(m.done) addLog('✓','good',`bought ${esc(m.name)}`);
+  // let the check draw before the list re-sorts under the pointer
+  const btn = document.querySelector(`#shop-manual [onclick="toggleManual('${id}')"]`);
+  if(btn && !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    btn.setAttribute('aria-checked', m.done?'true':'false');
+    btn.closest('.shop-row').classList.toggle('done', m.done);
+    renderBadges();
+    setTimeout(()=>{ renderShopping(); }, 360);
+  } else {
+    renderShopping(); renderBadges();
+  }
+}
+function removeManual(id){
+  const m = state.shop.find(x=>x.id===id); if(!m) return;
+  removeShop(id);
+  renderShopping(); renderBadges();
+}
+function openRestock(id){
+  restockId = id;
+  const it = state.items.find(x=>x.id===id); if(!it) return;
+  $('rs-name').textContent = it.name;
+  const suggest = Math.max(1, ((it.warnAt??0)*2) - (it.qty??0));
+  $('rs-qty').value = suggest;
+  $('dlg-restock').showModal();
+  $('rs-qty').focus(); $('rs-qty').select();
+}
+function rsSet(n){ $('rs-qty').value = n; }
+function confirmRestock(ev){
+  ev.preventDefault();
+  const it = state.items.find(x=>x.id===restockId); if(!it) return;
+  const n = Math.max(1, Math.min(9999, parseInt($('rs-qty').value)||1));
+  it.qty = (it.qty??0)+n;
+  it.updatedBy = myName()||'Someone'; it.updatedAt = Date.now();
+  upsertItem(it);
+  addLog('✓','good',`restocked ${esc(it.name)} +${n} → ${it.qty} ${esc(it.unit||'')}`.trim());
+  closeDlg('dlg-restock');
+  renderAll();
+  toast(`Restocked ${it.name} — ${it.qty} ${it.unit||''}`.trim());
+}
+
+/* ──────── activity ──────── */
+function dayLabel(ts){
+  const d = new Date(ts), now = new Date();
+  const day = (x)=>new Date(x.getFullYear(),x.getMonth(),x.getDate()).getTime();
+  const diff = (day(now)-day(d))/864e5;
+  if(diff===0) return 'Today';
+  if(diff===1) return 'Yesterday';
+  return d.toLocaleDateString(undefined,{day:'numeric',month:'long',year: d.getFullYear()!==now.getFullYear()?'numeric':undefined});
+}
+function renderActivity(){
+  const sel = $('log-who');
+  const names = [...new Set(state.log.map(l=>l.who))];
+  const cur = sel.value;
+  sel.innerHTML = `<option value="">Everyone</option>` + names.map(n=>`<option${n===cur?' selected':''}>${esc(n)}</option>`).join('');
+  let logs = state.log.slice().sort((a,b)=>b.ts-a.ts);
+  if(sel.value) logs = logs.filter(l=>l.who===sel.value);
+  if(!logs.length){
+    $('log-list').innerHTML = emptyBox('No activity yet','Changes show up here with a name and a time — so the list never lies.','');
+    return;
+  }
+  let html = '', lastDay = '';
+  logs.slice(0,300).forEach((l,li)=>{
+    const dl = dayLabel(l.ts);
+    if(dl!==lastDay){ html += `<div class="day-lbl">${dl}</div>`; lastDay = dl; }
+    html += `<div class="log-row" style="--i:${Math.min(li,14)}">
+      <span class="log-glyph ${l.tone||''}">${esc(l.glyph||'·')}</span>
+      <div class="log-body"><span class="log-who">${markSvg(l.who,12)} ${esc(l.who)}</span> <span class="log-text">${l.text}</span></div>
+      <span class="log-time num">${new Date(l.ts).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})}</span>
+    </div>`;
+  });
+  $('log-list').innerHTML = html;
+}
+
+/* ──────── settings ──────── */
+function renderCatList(){
+  $('cat-list').innerHTML = state.cats.map(c=>`
+    <span class="cat-chip">${esc(c)}
+      <button onclick="removeCat('${esc(c)}')" aria-label="Remove category ${esc(c)}">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>
+      </button>
+    </span>`).join('');
+}
+function addCat(){
+  const v = $('cat-input').value.trim();
+  if(!v || state.cats.some(c=>c.toLowerCase()===v.toLowerCase())) return;
+  state.cats.push(v);
+  persistMeta();
+  $('cat-input').value='';
+  renderCatControls();
+  toast(`Category added — ${v}`);
+}
+function removeCat(name){
+  const used = state.items.filter(i=>i.cat===name).length;
+  const msg = used
+    ? `${used} item${used>1?'s':''} use “${esc(name)}”. They keep the label; the category just leaves the pick list.`
+    : `Remove “${esc(name)}” from the pick list?`;
+  askConfirm('Remove category?', msg, 'REMOVE', ()=>{
+    state.cats = state.cats.filter(c=>c!==name);
+    persistMeta();
+    renderCatControls();
+  });
+}
+function exportJson(){
+  const blob = new Blob([JSON.stringify({
+    exportedAt:new Date().toISOString(), items:state.items, cats:state.cats,
+    shop:state.shop, log:state.log, members:state.members
+  },null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ag-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Backup exported');
+}
+function importJson(input){
+  const f = input.files[0]; if(!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const d = JSON.parse(reader.result);
+      if(!Array.isArray(d.items)) throw new Error('no items array');
+      askConfirm('Import backup?', `Replaces everything with the backup (${d.items.length} items).`, 'IMPORT', ()=>{
+        state.items=d.items; state.cats=d.cats?.length?d.cats:DEFAULT_CATS.slice();
+        state.shop=d.shop||[]; state.log=d.log||[]; state.members=d.members||{};
+        if(mode==='cloud'){
+          state.items.forEach(it=>fdb.collection('items').doc(it.id).set(it));
+          state.shop.forEach(s=>fdb.collection('shop').doc(s.id).set(s));
+          persistMeta();
+        } else persistLocal();
+        addLog('↺','',`imported a backup (${state.items.length} items)`);
+        renderCatControls(); renderHeader(); renderAll();
+        toast('Backup imported');
+      });
+    }catch(e){ toast('That file isn’t an A&G backup'); }
+    input.value='';
+  };
+  reader.readAsText(f);
+}
+function resetAll(){
+  askConfirm('Reset everything?','Deletes all items, the shopping list and the activity log. There is no undo — export a backup first.','RESET',()=>{
+    state.items=[]; state.shop=[]; state.log=[]; state.cats=DEFAULT_CATS.slice();
+    if(mode==='cloud'){ /* cloud reset: delete docs */
+      fdb.collection('items').get().then(s=>s.forEach(d=>d.ref.delete()));
+      fdb.collection('shop').get().then(s=>s.forEach(d=>d.ref.delete()));
+      fdb.collection('log').get().then(s=>s.forEach(d=>d.ref.delete()));
+      persistMeta();
+    } else persistLocal();
+    renderCatControls(); renderAll();
+    toast('Everything reset');
+  });
+}
+
+/* ──────── name dialog ──────── */
+let nameRequired = false;
+function openNameDialog(required){
+  nameRequired = !!required;
+  $('name-close').hidden = nameRequired;
+  $('yname').value = myName();
+  previewMark();
+  $('fw-yname').classList.remove('f-bad');
+  $('dlg-name').showModal();
+  $('yname').focus();
+}
+function previewMark(){
+  const v = $('yname').value.trim();
+  $('yname-echo').textContent = v;
+  if(v && state.members[v]==null){
+    // preview with the combo this name would get
+    const used = Object.values(state.members);
+    let i=0; while(used.includes(i%COMBOS.length) && i<COMBOS.length) i++;
+    const tmp = {...state.members}; tmp[v]=i%COMBOS.length;
+    const old = state.members; state.members = tmp;
+    $('yname-mark').innerHTML = markSvg(v,18);
+    state.members = old;
+  } else {
+    $('yname-mark').innerHTML = v ? markSvg(v,18) : '';
+  }
+}
+function saveName(ev){
+  ev.preventDefault();
+  const v = $('yname').value.trim();
+  if(!v){ $('fw-yname').classList.add('f-bad'); $('yname').focus(); return; }
+  const prev = myName();
+  localStorage.setItem(LS_NAME, v);
+  ensureMember(v);
+  if(prev && prev!==v) addLog('✎','',`is now signing as ${esc(v)} (was ${esc(prev)})`);
+  renderHeader(); renderAll();
+  closeDlg('dlg-name');
+  if(!prev) toast(`Welcome, ${v}`, v);
+}
+$('dlg-name').addEventListener('cancel', e=>{ if(nameRequired) e.preventDefault(); });
+
+/* ──────── confirm dialog ──────── */
+let confirmFn = null;
+function askConfirm(title, msg, label, fn){
+  $('dlg-confirm-title').textContent = title;
+  $('confirm-msg').innerHTML = msg;
+  $('confirm-yes').textContent = label;
+  confirmFn = fn;
+  $('dlg-confirm').showModal();
+}
+$('confirm-yes').addEventListener('click', ()=>{
+  closeDlg('dlg-confirm');
+  if(confirmFn){ const f=confirmFn; confirmFn=null; f(); }
+});
+
+/* ──────── misc ──────── */
+function closeDlg(id){ $(id).close(); }
+function toast(msg, withMark){
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = (withMark?markSvg(withMark,14):'') + esc(msg);
+  $('toasts').appendChild(t);
+  setTimeout(()=>{ t.style.transition='opacity .3s'; t.style.opacity='0'; setTimeout(()=>t.remove(),320); }, 2600);
+}
+let _staggered = false;
+function renderAll(){
+  if(!_staggered){
+    _staggered = true;
+    ['inv-list','shop-auto','shop-manual','log-list'].forEach(id=>$(id).classList.add('stagger'));
+    setTimeout(()=>document.querySelectorAll('.stagger').forEach(e=>e.classList.remove('stagger')), 900);
+  }
+  renderInventory();
+  renderShopping();
+  renderActivity();
+  renderBadges();
+}
+
+/* ──────── theme ──────── */
+function currentTheme(){
+  return localStorage.getItem(LS_THEME)
+    || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+}
+function applyTheme(t){
+  document.documentElement.classList.toggle('dark', t==='dark');
+  $('theme-btn').setAttribute('aria-label', t==='dark' ? 'Switch to day mode' : 'Switch to night mode');
+  document.querySelector('meta[name="theme-color"]').setAttribute('content', t==='dark' ? '#43100d' : '#A90E0F');
+}
+function toggleTheme(){
+  const t = currentTheme()==='dark' ? 'light' : 'dark';
+  localStorage.setItem(LS_THEME, t);
+  applyTheme(t);
+}
+/* follow the system until the user has chosen explicitly */
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ()=>{
+  if(!localStorage.getItem(LS_THEME)) applyTheme(currentTheme());
+});
+
+/* ──────── boot ──────── */
+applyTheme(currentTheme());
+initSync();
+</script>
+</body>
+</html>
